@@ -386,7 +386,7 @@ function processarMensagem(tel, textoOriginal) {
     sessao.etapa = 'menu';
     return;
   }
-  if (k === 'preços e horários' || k === 'precos e horarios' || contem(texto, ['horário','horario','preço','preco','valor','valores','período','periodo'])) {
+  if (contem(texto, ['horário','horario','preço','preco','valor','valores','período','periodo','horários','horarios'])) {
     enviarMensagem(tel,
       '⏰ *Horários e valores do Motel Lamore*\n\n' +
       '📅 *Período Semana:*\n' +
