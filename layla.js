@@ -11,9 +11,9 @@ const https = require('https');
 //  CONFIGURAÇÕES — PREENCHA ANTES DE LIGAR
 // ============================================================
 const CONFIG = {
-  ZAPI_INSTANCE:  '3F10476A93B9C14397CFBA665B49BD70',   // Ex: "3EB0F1A2B3C4"
-  ZAPI_TOKEN:     '060575DE041301E87AB1A483',          // Ex: "F1A2B3C4D5E6..."
-  ZAPI_CLIENT_TOKEN: 'F4cfafb1e17054b309e978e11d94ad1adS', // Encontrado no painel Z-API
+  ZAPI_INSTANCE:  'SEU_INSTANCE_ID',   // Ex: "3EB0F1A2B3C4"
+  ZAPI_TOKEN:     'SEU_TOKEN',          // Ex: "F1A2B3C4D5E6..."
+  ZAPI_CLIENT_TOKEN: 'SEU_CLIENT_TOKEN', // Encontrado no painel Z-API
   NUMERO_DONO:    '5543996066590',      // Número do proprietário (não é revelado ao cliente)
   PORTA:          3000,                 // Porta local do servidor
 };
@@ -90,8 +90,8 @@ const SUITES = {
       '✅ Ducha higiênica _(não possui chuveiro)_\n' +
       '🚗 Estacionamento coberto e privativo\n\n' +
       '💰 *2 horas:*\n' +
-      '• Semana: R$ 50,00 (hora add. R$ 20)\n' +
-      '• Fim de semana: R$ 55,00 (hora add. R$ 20)\n\n' +
+      '📅 Semana _(seg 6h → qui 18h)_: R$ 50,00 (hora add. R$ 20)\n' +
+      '📅 Fim de semana _(qui 18h → seg 6h)_: R$ 55,00 (hora add. R$ 20)\n\n' +
       '⏰ Entrada direta, 24 horas!\n\n' +
       '✨ _Dica: por apenas R$ 30 a mais a Suíte Luxo tem chuveiro e opção de pernoite. Digite *2* para conhecer!_',
     proxima: '2',
@@ -104,12 +104,14 @@ const SUITES = {
       '✅ TV\n✅ Ar-condicionado\n✅ Frigobar\n✅ Chuveiro\n' +
       '🚗 Estacionamento coberto e privativo\n\n' +
       '💰 *2 horas:*\n' +
-      '• Semana: R$ 80,00 / FDS: R$ 85,00 (hora add. R$ 35)\n\n' +
+      '📅 Semana _(seg 6h → qui 18h)_: R$ 80,00 (hora add. R$ 35)\n' +
+      '📅 Fim de semana _(qui 18h → seg 6h)_: R$ 85,00 (hora add. R$ 35)\n\n' +
       '🌙 *Pernoite (12h):*\n' +
-      '• Semana: R$ 179,00 / FDS: R$ 269,00\n\n' +
+      '📅 Semana: R$ 179,00\n' +
+      '📅 Fim de semana: R$ 269,00\n\n' +
       '🌹 Com decoração especial: a partir de R$ 329,00\n\n' +
-      '✨ _Dica: a Suíte Hidro tem hidromassagem privativa — perfeita para relaxar a dois. Digite *3* para conhecer!_',
-    proxima: '3',
+      '✨ _Dica: a Suíte Hidro tem hidromassagem privativa — perfeita para relaxar a dois. Digite *4* para conhecer!_',
+    proxima: '4',
   },
   hidro: {
     nome: 'Suíte Hidro',
@@ -119,12 +121,14 @@ const SUITES = {
       '✅ Hidromassagem\n✅ Chuveiro\n✅ Ar-condicionado\n✅ TV\n✅ Frigobar\n' +
       '🚗 Estacionamento coberto e privativo\n\n' +
       '💰 *2 horas:*\n' +
-      '• Semana: R$ 149,00 / FDS: R$ 169,00 (hora add. R$ 70)\n\n' +
+      '📅 Semana _(seg 6h → qui 18h)_: R$ 149,00 (hora add. R$ 70)\n' +
+      '📅 Fim de semana _(qui 18h → seg 6h)_: R$ 169,00 (hora add. R$ 70)\n\n' +
       '🌙 *Pernoite (12h):*\n' +
-      '• Semana: R$ 299,00 / FDS: R$ 419,00\n\n' +
+      '📅 Semana: R$ 299,00\n' +
+      '📅 Fim de semana: R$ 419,00\n\n' +
       '🌹 Com decoração especial: a partir de R$ 529,00\n\n' +
-      '✨ _Dica: para o máximo em exclusividade, a Hidro Premium é nossa suíte top. Digite *4* para conhecer!_',
-    proxima: '4',
+      '✨ _Dica: para o máximo em exclusividade, a Hidro Premium é nossa suíte top. Digite *5* para conhecer!_',
+    proxima: '5',
   },
   premium: {
     nome: 'Hidro Premium',
@@ -134,14 +138,22 @@ const SUITES = {
       '✅ Hidromassagem premium\n✅ Chuveiro\n✅ Ar-condicionado\n✅ TV\n✅ Frigobar\n' +
       '🚗 Estacionamento coberto e privativo\n\n' +
       '💰 *2 horas:*\n' +
-      '• Semana: R$ 165,00 / FDS: R$ 185,00 (hora add. R$ 40)\n\n' +
+      '📅 Semana _(seg 6h → qui 18h)_: R$ 165,00 (hora add. R$ 40)\n' +
+      '📅 Fim de semana _(qui 18h → seg 6h)_: R$ 185,00 (hora add. R$ 40)\n\n' +
       '🌙 *Pernoite (12h):*\n' +
-      '• Semana: R$ 329,00 / FDS: R$ 439,00\n\n' +
+      '📅 Semana: R$ 329,00\n' +
+      '📅 Fim de semana: R$ 439,00\n\n' +
       '🌹 Com decoração especial: a partir de R$ 549,00\n\n' +
       '🏆 A escolha perfeita para quem quer o melhor!',
     proxima: null,
   },
 };
+
+const HORARIOS =
+  '📅 *Período Semana:*\n' +
+  'Segunda-feira às 6h até Quinta-feira às 18h\n\n' +
+  '📅 *Período Fim de Semana:*\n' +
+  'Quinta-feira às 18h até Segunda-feira às 6h';
 
 const MENU_PRINCIPAL =
   'Olá! Seja muito bem-vindo ao *Motel Lamore* 🌹\n\n' +
@@ -164,6 +176,9 @@ const MENU_SUITES =
   '✨ *Luxo* — a partir de R$ 80 (2h) | R$ 179 (pernoite)\n' +
   '🛁 *Hidro* — a partir de R$ 149 (2h) | R$ 299 (pernoite)\n' +
   '👑 *Hidro Premium* — a partir de R$ 165 (2h) | R$ 329 (pernoite)\n\n' +
+  '⏰ *Nossos períodos:*\n' +
+  '📅 Semana: segunda às 6h → quinta às 18h\n' +
+  '📅 Fim de semana: quinta às 18h → segunda às 6h\n\n' +
   'Digite o número da suíte para mais detalhes:\n' +
   '2 - Standart | 3 - Luxo | 4 - Hidro | 5 - Premium';
 
@@ -371,6 +386,27 @@ function processarMensagem(tel, textoOriginal) {
     sessao.etapa = 'menu';
     return;
   }
+  if (k === 'preços e horários' || k === 'precos e horarios' || contem(texto, ['horário','horario','preço','preco','valor','valores','período','periodo'])) {
+    enviarMensagem(tel,
+      '⏰ *Horários e valores do Motel Lamore*\n\n' +
+      '📅 *Período Semana:*\n' +
+      'Segunda-feira às 6h até Quinta-feira às 18h\n\n' +
+      '📅 *Período Fim de Semana:*\n' +
+      'Quinta-feira às 18h até Segunda-feira às 6h\n\n' +
+      '💰 *Valores por suíte:*\n\n' +
+      '🛏 Standart — 2h: R$ 50 (semana) | R$ 55 (FDS)\n' +
+      '✨ Luxo — 2h: R$ 80 (semana) | R$ 85 (FDS)\n' +
+      '         Pernoite: R$ 179 (semana) | R$ 269 (FDS)\n' +
+      '🛁 Hidro — 2h: R$ 149 (semana) | R$ 169 (FDS)\n' +
+      '           Pernoite: R$ 299 (semana) | R$ 419 (FDS)\n' +
+      '👑 Premium — 2h: R$ 165 (semana) | R$ 185 (FDS)\n' +
+      '             Pernoite: R$ 329 (semana) | R$ 439 (FDS)\n\n' +
+      'Funcionamos *24 horas*, todos os dias!'
+    );
+    sessao.etapa = 'menu';
+    return;
+  }
+
   if (texto === '3' || contem(texto, ['luxo','suite luxo','suíte luxo'])) {
     enviarMensagem(tel, SUITES.luxo.texto);
     sessao.etapa = 'menu';
