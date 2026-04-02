@@ -11,9 +11,9 @@ const https = require('https');
 //  CONFIGURAÇÕES — PREENCHA ANTES DE LIGAR
 // ============================================================
 const CONFIG = {
-  ZAPI_INSTANCE:  'SEU_INSTANCE_ID',   // Ex: "3EB0F1A2B3C4"
-  ZAPI_TOKEN:     'SEU_TOKEN',          // Ex: "F1A2B3C4D5E6..."
-  ZAPI_CLIENT_TOKEN: 'SEU_CLIENT_TOKEN', // Encontrado no painel Z-API
+  ZAPI_INSTANCE:  '3F10476A93B9C14397CFBA665B49BD70',   // Ex: "3EB0F1A2B3C4"
+  ZAPI_TOKEN:     '060575DE041301E87AB1A483',          // Ex: "F1A2B3C4D5E6..."
+  ZAPI_CLIENT_TOKEN: 'F4cfafb1e17054b309e978e11d94ad1adS', // Encontrado no painel Z-API
   NUMERO_DONO:    '5543996066590',      // Número do proprietário (não é revelado ao cliente)
   PORTA:          3000,                 // Porta local do servidor
 };
