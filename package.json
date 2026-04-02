@@ -1,0 +1,8 @@
+{
+  "name": "lamore-bot",
+  "version": "1.0.0",
+  "main": "layla.js",
+  "scripts": {
+    "start": "node layla.js"
+  }
+}
