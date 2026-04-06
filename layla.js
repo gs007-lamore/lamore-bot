@@ -1,13 +1,13 @@
 // ============================================================
-//  LAYLA — Assistente Virtual do Motel Lamore
-//  Versão 2.0 | Ourinhos/SP
+//  LAYLA - Assistente Virtual do Motel Lamore
+//  Versao 3.0 | Ourinhos/SP
 // ============================================================
 
 const http  = require('http');
 const https = require('https');
 
 // ============================================================
-//  CONFIGURAÇÕES — PREENCHA COM SEUS DADOS DO Z-API
+//  CONFIGURACOES - PREENCHA COM SEUS DADOS DO Z-API
 // ============================================================
 const CONFIG = {
   ZAPI_INSTANCE:     '3F10476A93B9C14397CFBA665B49BD70',
@@ -50,9 +50,11 @@ function enviarMensagem(telefone, texto) {
     },
   };
   const req = https.request(opts, function(res) {
-    var d = '';
+    let d = '';
     res.on('data', function(c) { d += c; });
-    res.on('end', function() { console.log('[ENVIADO -> ' + telefone + '] status ' + res.statusCode); });
+    res.on('end', function() {
+      console.log('[ENVIADO -> ' + telefone + '] status ' + res.statusCode);
+    });
   });
   req.on('error', function(e) { console.error('[ERRO envio]', e.message); });
   req.write(body);
@@ -63,12 +65,17 @@ function enviarMensagem(telefone, texto) {
 //  ALERTAS INTERNOS AO DONO
 // ============================================================
 function alertarDono(tipo, telefoneCliente, mensagemCliente, dadosExtras) {
-  var hora   = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  var icones = { reclamacao: 'RECLAMACAO', esquecido: 'ITEM ESQUECIDO', decoracao: 'RESERVA DECORACAO', atendente: 'ATENDENTE SOLICITADO' };
+  const hora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const labels = {
+    reclamacao: 'Reclamacao de cliente',
+    esquecido:  'Item esquecido',
+    decoracao:  'Reserva com decoracao especial',
+    atendente:  'Cliente solicitou atendente',
+  };
 
-  var alerta =
-    '*ALERTA LAMORE*\n' +
-    'Tipo: ' + icones[tipo] + '\n' +
+  let alerta =
+    'ALERTA LAMORE\n' +
+    'Tipo: ' + labels[tipo] + '\n' +
     'Cliente: ' + telefoneCliente + '\n' +
     'Mensagem: "' + mensagemCliente + '"\n' +
     'Hora: ' + hora;
@@ -78,84 +85,90 @@ function alertarDono(tipo, telefoneCliente, mensagemCliente, dadosExtras) {
   }
 
   enviarMensagem(CONFIG.NUMERO_DONO, alerta);
-  console.log('[ALERTA DONO] ' + icones[tipo] + ' - cliente ' + telefoneCliente);
+  console.log('[ALERTA DONO] ' + labels[tipo] + ' - cliente ' + telefoneCliente);
 }
 
 // ============================================================
 //  TEXTOS DAS SUITES
 // ============================================================
-var SUITE_STANDART =
-  'Suite Standart\n\n' +
+const SUITE_STANDART =
+  '\u{1F6CF} *Suite Standart*\n\n' +
   'Conforto e aconchego para uma pausa especial.\n\n' +
-  'TV\n' +
-  'Ar-condicionado\n' +
-  'Frigobar\n' +
-  'Ducha higienica (nao possui chuveiro)\n' +
-  'Estacionamento coberto e privativo\n\n' +
-  '2 horas:\n' +
-  'Semana (seg 6h ate qui 18h): R$ 50,00 (hora adicional R$ 20,00)\n' +
-  'Fim de semana (qui 18h ate seg 6h): R$ 55,00 (hora adicional R$ 20,00)\n\n' +
-  'Entrada direta, 24 horas!\n\n' +
-  'Dica: por apenas R$ 30,00 a mais, a Suite Luxo tem chuveiro e opcao de pernoite. Digite 3 para conhecer!';
+  '\u2705 TV\n' +
+  '\u2705 Ar-condicionado\n' +
+  '\u2705 Frigobar\n' +
+  '\u2705 Ducha higienica _(nao possui chuveiro)_\n' +
+  '\u{1F697} Estacionamento coberto e privativo\n\n' +
+  '\u{1F4B0} *2 horas:*\n' +
+  '\u{1F4C5} Semana _(seg 6h ate qui 18h)_: R$ 50,00 (hora adicional R$ 20,00)\n' +
+  '\u{1F4C5} Fim de semana _(qui 18h ate seg 6h)_: R$ 55,00 (hora adicional R$ 20,00)\n\n' +
+  '\u23F0 Entrada direta, 24 horas! Nao e necessario reserva.\n\n' +
+  '\u2728 _Dica: por apenas R$ 30,00 a mais, a Suite Luxo tem chuveiro e opcao de pernoite. Digite *3* para conhecer!_';
 
-var SUITE_LUXO =
-  'Suite Luxo\n\n' +
+const SUITE_LUXO =
+  '\u2728 *Suite Luxo*\n\n' +
   'Sofisticacao e bem-estar com exclusividade.\n\n' +
-  'TV\n' +
-  'Ar-condicionado\n' +
-  'Frigobar\n' +
-  'Chuveiro\n' +
-  'Estacionamento coberto e privativo\n\n' +
-  '2 horas:\n' +
-  'Semana (seg 6h ate qui 18h): R$ 80,00 (hora adicional R$ 35,00)\n' +
-  'Fim de semana (qui 18h ate seg 6h): R$ 85,00 (hora adicional R$ 35,00)\n\n' +
-  'Pernoite (12h):\n' +
-  'Semana: R$ 179,00\n' +
-  'Fim de semana: R$ 269,00\n\n' +
-  'Com decoracao especial: a partir de R$ 329,00\n\n' +
-  'Dica: a Suite Hidro tem hidromassagem privativa. Digite 4 para conhecer!';
+  '\u2705 TV\n' +
+  '\u2705 Ar-condicionado\n' +
+  '\u2705 Frigobar\n' +
+  '\u2705 Chuveiro\n' +
+  '\u{1F697} Estacionamento coberto e privativo\n\n' +
+  '\u{1F4B0} *2 horas:*\n' +
+  '\u{1F4C5} Semana _(seg 6h ate qui 18h)_: R$ 80,00 (hora adicional R$ 35,00)\n' +
+  '\u{1F4C5} Fim de semana _(qui 18h ate seg 6h)_: R$ 85,00 (hora adicional R$ 35,00)\n\n' +
+  '\u{1F319} *Pernoite (12h):*\n' +
+  '\u{1F4C5} Semana: R$ 179,00\n' +
+  '\u{1F4C5} Fim de semana: R$ 269,00\n\n' +
+  '\u{1F339} Com decoracao especial: a partir de R$ 329,00\n\n' +
+  '\u23F0 Entrada direta, 24 horas! Nao e necessario reserva.\n' +
+  '_(Reserva obrigatoria apenas para decoracao especial)_\n\n' +
+  '\u2728 _Dica: a Suite Hidro tem hidromassagem privativa. Digite *4* para conhecer!_';
 
-var SUITE_HIDRO =
-  'Suite Hidro\n\n' +
+const SUITE_HIDRO =
+  '\u{1F6C1} *Suite Hidro*\n\n' +
   'Hidromassagem privativa para momentos inesqueciveis.\n\n' +
-  'Hidromassagem\n' +
-  'Chuveiro\n' +
-  'Ar-condicionado\n' +
-  'TV\n' +
-  'Frigobar\n' +
-  'Estacionamento coberto e privativo\n\n' +
-  '2 horas:\n' +
-  'Semana (seg 6h ate qui 18h): R$ 149,00 (hora adicional R$ 70,00)\n' +
-  'Fim de semana (qui 18h ate seg 6h): R$ 169,00 (hora adicional R$ 70,00)\n\n' +
-  'Pernoite (12h):\n' +
-  'Semana: R$ 299,00\n' +
-  'Fim de semana: R$ 419,00\n\n' +
-  'Com decoracao especial: a partir de R$ 529,00\n\n' +
-  'Dica: a Hidro Premium e nossa suite mais exclusiva. Digite 5 para conhecer!';
+  '\u2705 Hidromassagem\n' +
+  '\u2705 Chuveiro\n' +
+  '\u2705 Ar-condicionado\n' +
+  '\u2705 TV\n' +
+  '\u2705 Frigobar\n' +
+  '\u{1F697} Estacionamento coberto e privativo\n\n' +
+  '\u{1F4B0} *2 horas:*\n' +
+  '\u{1F4C5} Semana _(seg 6h ate qui 18h)_: R$ 149,00 (hora adicional R$ 70,00)\n' +
+  '\u{1F4C5} Fim de semana _(qui 18h ate seg 6h)_: R$ 169,00 (hora adicional R$ 70,00)\n\n' +
+  '\u{1F319} *Pernoite (12h):*\n' +
+  '\u{1F4C5} Semana: R$ 299,00\n' +
+  '\u{1F4C5} Fim de semana: R$ 419,00\n\n' +
+  '\u{1F339} Com decoracao especial: a partir de R$ 529,00\n\n' +
+  '\u23F0 Entrada direta, 24 horas! Nao e necessario reserva.\n' +
+  '_(Reserva obrigatoria apenas para decoracao especial)_\n\n' +
+  '\u2728 _Dica: a Hidro Premium e nossa suite mais exclusiva. Digite *5* para conhecer!_';
 
-var SUITE_PREMIUM =
-  'Hidro Premium\n\n' +
+const SUITE_PREMIUM =
+  '\u{1F451} *Hidro Premium*\n\n' +
   'Nossa suite mais exclusiva. Maximo em bem-estar e privacidade.\n\n' +
-  'Hidromassagem premium\n' +
-  'Chuveiro\n' +
-  'Ar-condicionado\n' +
-  'TV\n' +
-  'Frigobar\n' +
-  'Estacionamento coberto e privativo\n\n' +
-  '2 horas:\n' +
-  'Semana (seg 6h ate qui 18h): R$ 165,00 (hora adicional R$ 40,00)\n' +
-  'Fim de semana (qui 18h ate seg 6h): R$ 185,00 (hora adicional R$ 40,00)\n\n' +
-  'Pernoite (12h):\n' +
-  'Semana: R$ 329,00\n' +
-  'Fim de semana: R$ 439,00\n\n' +
-  'Com decoracao especial: a partir de R$ 549,00\n\n' +
-  'A escolha perfeita para quem quer o melhor!';
+  '\u2705 Hidromassagem premium\n' +
+  '\u2705 Chuveiro\n' +
+  '\u2705 Ar-condicionado\n' +
+  '\u2705 TV\n' +
+  '\u2705 Frigobar\n' +
+  '\u{1F697} Estacionamento coberto e privativo\n\n' +
+  '\u{1F4B0} *2 horas:*\n' +
+  '\u{1F4C5} Semana _(seg 6h ate qui 18h)_: R$ 165,00 (hora adicional R$ 40,00)\n' +
+  '\u{1F4C5} Fim de semana _(qui 18h ate seg 6h)_: R$ 185,00 (hora adicional R$ 40,00)\n\n' +
+  '\u{1F319} *Pernoite (12h):*\n' +
+  '\u{1F4C5} Semana: R$ 329,00\n' +
+  '\u{1F4C5} Fim de semana: R$ 439,00\n\n' +
+  '\u{1F339} Com decoracao especial: a partir de R$ 549,00\n\n' +
+  '\u23F0 Entrada direta, 24 horas! Nao e necessario reserva.\n' +
+  '_(Reserva obrigatoria apenas para decoracao especial)_\n\n' +
+  '\u{1F3C6} A escolha perfeita para quem quer o melhor!';
 
 // ============================================================
 //  MENSAGENS FIXAS
 // ============================================================
-var MENU_PRINCIPAL =
-  'Ola! Seja muito bem-vindo ao Motel Lamore\n\n' +
+const MENU_PRINCIPAL =
+  'Ola! Seja muito bem-vindo ao *Motel Lamore* \u{1F339}\n\n' +
   'Somos referencia em bem-estar e exclusividade em Ourinhos/SP.\n\n' +
   'Como posso te ajudar? Digite o numero:\n\n' +
   '1 - Ver suites e precos\n' +
@@ -169,97 +182,130 @@ var MENU_PRINCIPAL =
   '9 - Como chegar\n' +
   '0 - Falar com atendente';
 
-var MENU_SUITES =
-  'Nossas suites:\n\n' +
-  'Standart - a partir de R$ 50,00 (2h)\n' +
-  'Luxo - a partir de R$ 80,00 (2h) | R$ 179,00 (pernoite)\n' +
-  'Hidro - a partir de R$ 149,00 (2h) | R$ 299,00 (pernoite)\n' +
-  'Hidro Premium - a partir de R$ 165,00 (2h) | R$ 329,00 (pernoite)\n\n' +
-  'Nossos periodos:\n' +
-  'Semana: segunda as 6h ate quinta as 18h\n' +
-  'Fim de semana: quinta as 18h ate segunda as 6h\n\n' +
+const MENU_SUITES =
+  '\u{1F339} *Nossas suites:*\n\n' +
+  '\u{1F6CF} *Standart* - a partir de R$ 50,00 (2h)\n' +
+  '\u2728 *Luxo* - a partir de R$ 80,00 (2h) | R$ 179,00 (pernoite)\n' +
+  '\u{1F6C1} *Hidro* - a partir de R$ 149,00 (2h) | R$ 299,00 (pernoite)\n' +
+  '\u{1F451} *Hidro Premium* - a partir de R$ 165,00 (2h) | R$ 329,00 (pernoite)\n\n' +
+  '\u23F0 *Nossos periodos:*\n' +
+  '\u{1F4C5} Semana: segunda as 6h ate quinta as 18h\n' +
+  '\u{1F4C5} Fim de semana: quinta as 18h ate segunda as 6h\n\n' +
+  '\u2139 Nao e necessario reserva para aproveitar nossas suites!\n' +
+  'A reserva e obrigatoria apenas para decoracao especial.\n\n' +
   'Digite o numero da suite:\n' +
   '2 - Standart | 3 - Luxo | 4 - Hidro | 5 - Premium';
 
-var HORARIOS_MSG =
-  'Horarios e valores do Motel Lamore\n\n' +
-  'Periodo Semana:\n' +
+const HORARIOS_MSG =
+  '\u23F0 *Horarios e valores do Motel Lamore*\n\n' +
+  '\u{1F4C5} *Periodo Semana:*\n' +
   'Segunda-feira as 6h ate Quinta-feira as 18h\n\n' +
-  'Periodo Fim de Semana:\n' +
+  '\u{1F4C5} *Periodo Fim de Semana:*\n' +
   'Quinta-feira as 18h ate Segunda-feira as 6h\n\n' +
-  'Valores por suite:\n\n' +
-  'Standart - 2h: R$ 50,00 (sem) | R$ 55,00 (fds)\n' +
-  'Luxo - 2h: R$ 80,00 (sem) | R$ 85,00 (fds)\n' +
-  '       Pernoite: R$ 179,00 (sem) | R$ 269,00 (fds)\n' +
-  'Hidro - 2h: R$ 149,00 (sem) | R$ 169,00 (fds)\n' +
-  '        Pernoite: R$ 299,00 (sem) | R$ 419,00 (fds)\n' +
-  'Premium - 2h: R$ 165,00 (sem) | R$ 185,00 (fds)\n' +
-  '          Pernoite: R$ 329,00 (sem) | R$ 439,00 (fds)\n\n' +
-  'Funcionamos 24 horas, todos os dias!';
+  '\u{1F4B0} *Valores:*\n\n' +
+  '\u{1F6CF} *Standart*\n' +
+  '  2h: R$ 50,00 (semana) | R$ 55,00 (fim de semana)\n\n' +
+  '\u2728 *Luxo*\n' +
+  '  2h: R$ 80,00 (semana) | R$ 85,00 (fim de semana)\n' +
+  '  Pernoite: R$ 179,00 (semana) | R$ 269,00 (fim de semana)\n\n' +
+  '\u{1F6C1} *Hidro*\n' +
+  '  2h: R$ 149,00 (semana) | R$ 169,00 (fim de semana)\n' +
+  '  Pernoite: R$ 299,00 (semana) | R$ 419,00 (fim de semana)\n\n' +
+  '\u{1F451} *Hidro Premium*\n' +
+  '  2h: R$ 165,00 (semana) | R$ 185,00 (fim de semana)\n' +
+  '  Pernoite: R$ 329,00 (semana) | R$ 439,00 (fim de semana)\n\n' +
+  'Funcionamos *24 horas*, todos os dias!\n\n' +
+  '\u2139 Nao e necessario reserva. Pode vir direto!\n' +
+  '_(Reserva obrigatoria apenas para decoracao especial, com 36h de antecedencia)_';
 
-var DECORACAO_MSG =
-  'Decoracao Especial Lamore\n\n' +
+const RESERVAS_MSG =
+  '\u2139 *Informacoes sobre reservas*\n\n' +
+  'Para aproveitar nossas suites *nao e necessario fazer reserva*!\n' +
+  'Basta chegar na recepcao a qualquer hora - funcionamos 24 horas.\n\n' +
+  '\u{1F4CC} *A reserva e obrigatoria apenas para:*\n' +
+  'Decoracao especial (minimo 36h de antecedencia)\n\n' +
+  '\u{1F4C5} *Periodos:*\n' +
+  'Semana: segunda as 6h ate quinta as 18h\n' +
+  'Fim de semana: quinta as 18h ate segunda as 6h\n\n' +
+  'Quer reservar uma decoracao especial? Digite *reservar*';
+
+const DIFERENCA_SUITES =
+  '\u{1F4F8} *Comparativo das suites*\n\n' +
+  '\u{1F6CF} *Standart* - R$ 50,00 (2h semana)\n' +
+  'Ideal para uma pausa rapida. TV, ar, frigobar e ducha higienica.\n\n' +
+  '\u2728 *Luxo* - R$ 80,00 (2h semana)\n' +
+  'Mais conforto com chuveiro incluso. Opcao de pernoite.\n\n' +
+  '\u{1F6C1} *Hidro* - R$ 149,00 (2h semana)\n' +
+  'Hidromassagem privativa + chuveiro. Perfeita para relaxar a dois.\n\n' +
+  '\u{1F451} *Hidro Premium* - R$ 165,00 (2h semana)\n' +
+  'Nossa suite mais exclusiva com hidromassagem premium.\n\n' +
+  '\u{1F4F8} Para ver as fotos de cada suite:\n' + FOTOS_URL;
+
+const DECORACAO_MSG =
+  '\u{1F339} *Decoracao Especial Lamore*\n\n' +
   'Transformamos a suite num cenario unico e inesquecivel:\n\n' +
-  'Cobertor vermelho\n' +
-  'Lencol personalizado com frase a sua escolha:\n' +
-  '- Parabens pelo seu aniversario\n' +
-  '- Parabens pelo nosso aniversario de casamento\n' +
-  '- Felicidades aos noivos\n' +
-  '- Eu te amo\n' +
-  '- Quer casar comigo?\n' +
-  '- Quer namorar comigo?\n' +
-  '- Vamos brindar o amor\n' +
-  '- Voce me faz feliz\n\n' +
-  '2 baloes metalicos coracao + 15 bexigas\n' +
-  'Petalas de rosas artificiais e naturais\n' +
-  'Velas decorativas LED + aparador\n' +
-  '2 pacotes de bombons\n' +
-  'Toalhas e tapetes personalizados\n' +
-  'Espumante no balde com gelo + 2 tacas\n\n' +
-  'Reserva com minimo 36h de antecedencia.\n\n' +
+  '\u{1F6CF} Cobertor vermelho\n' +
+  '\u{1F6CF} Lencol personalizado com frase a sua escolha:\n' +
+  '   - Parabens pelo seu aniversario\n' +
+  '   - Parabens pelo nosso aniversario de casamento\n' +
+  '   - Felicidades aos noivos\n' +
+  '   - Eu te amo\n' +
+  '   - Quer casar comigo?\n' +
+  '   - Quer namorar comigo?\n' +
+  '   - Vamos brindar o amor\n' +
+  '   - Voce me faz feliz\n\n' +
+  '\u{1F388} 2 baloes metalicos coracao + 15 bexigas\n' +
+  '\u{1F339} Petalas de rosas artificiais e naturais\n' +
+  '\u{1F56F} Velas decorativas LED + aparador\n' +
+  '\u{1F36B} 2 pacotes de bombons\n' +
+  '\u{1F6C1} Toalhas e tapetes personalizados\n' +
+  '\u{1F37E} Espumante no balde com gelo + 2 tacas\n\n' +
+  '\u{1F4CC} *Reserva com minimo 36h de antecedencia.*\n\n' +
   'Para qual suite voce gostaria de reservar?\n' +
   '3 - Luxo | 4 - Hidro | 5 - Premium\n\n' +
-  'Ou escreva "reservar" para iniciar o agendamento agora.';
+  'Ou escreva *reservar* para iniciar o agendamento agora.';
 
 // ============================================================
 //  VERIFICACAO DE PALAVRAS-CHAVE
 // ============================================================
 function contem(texto, palavras) {
-  var t = texto.toLowerCase();
-  for (var i = 0; i < palavras.length; i++) {
+  const t = texto.toLowerCase();
+  for (let i = 0; i < palavras.length; i++) {
     if (t.indexOf(palavras[i]) !== -1) return true;
   }
   return false;
 }
 
-var KW_RECLAMACAO  = ['reclamacao','reclamar','problema','pessimo','horrivel','insatisfeito','decepcionado','nao gostei','sujo','quebrado','errado','ruim','reclamação','péssimo','horrível'];
-var KW_ESQUECIDO   = ['esqueci','esquecido','esqueceu','deixei','objeto perdido','bolsa','carteira','celular','chave','documento','oculos','roupa','pertence','óculos'];
-var KW_FOTO        = ['foto','fotos','imagem','imagens','como e','mostra','quero ver','aparencia','ver as fotos'];
-var KW_CHEGAR      = ['endereco','onde fica','localizacao','como chegar','mapa','endereço','localização'];
-var KW_DISPONIVEL  = ['disponivel','disponibilidade','tem quarto','tem vaga','livre','vago','ocupado','disponível'];
-var KW_ATENDENTE   = ['atendente','humano','falar com','quero falar','me ajuda'];
-var KW_NUMERO_PRIV = ['numero do dono','seu numero','numero interno','43996','99606','numero privado','número do dono','número privado'];
-var KW_RESERVAR    = ['quero reservar','fazer reserva','quero agendar','reservar decoracao','reservar decoração'];
-var KW_HORARIO     = ['horario','preco','valor','valores','periodo','tabela','horários','horário','preço','período'];
-var KW_OI          = ['oi','ola','bom dia','boa tarde','boa noite','hello','hi','hey','menu','inicio','comeco','ajuda','olá','início'];
+const KW_RECLAMACAO  = ['reclamacao','reclamar','problema','pessimo','horrivel','insatisfeito','decepcionado','nao gostei','sujo','quebrado','errado','ruim'];
+const KW_ESQUECIDO   = ['esqueci','esquecido','esqueceu','deixei','objeto perdido','bolsa','carteira','celular','chave','documento','oculos','roupa','pertence'];
+const KW_FOTO        = ['foto','fotos','imagem','imagens','ver as fotos','galeria','quero ver as fotos'];
+const KW_CHEGAR      = ['endereco','onde fica','localizacao','como chegar','mapa'];
+const KW_DISPONIVEL  = ['disponivel','disponibilidade','tem quarto','tem vaga','livre','vago','ocupado'];
+const KW_ATENDENTE   = ['atendente','humano','falar com','quero falar','me ajuda'];
+const KW_NUMERO_PRIV = ['numero do dono','seu numero','numero interno','43996','99606','numero privado'];
+const KW_RESERVAR    = ['quero reservar','fazer reserva','quero agendar','reservar decoracao'];
+const KW_HORARIO     = ['horario','preco','valor','valores','periodo','tabela'];
+const KW_RESERVA_INFO = ['preciso reservar','precisa reservar','tem que reservar','e necessario reservar','necessario reservar','como reservar','fazer reserva','informacao sobre reserva','preciso fazer reserva'];
+const KW_DIFERENCA   = ['diferenca','diferenca entre','qual a diferenca','comparar','comparativo','melhor suite','qual suite','me explica as suites','qual e melhor'];
+const KW_OI          = ['oi','ola','bom dia','boa tarde','boa noite','hello','hi','hey','menu','inicio','comeco','ajuda'];
 
 // ============================================================
 //  FLUXO DE RESERVA COM DECORACAO
 // ============================================================
 function processarReserva(tel, texto, sessao) {
-  var etapa = sessao.etapa;
+  const etapa = sessao.etapa;
 
   if (etapa === 'reserva_suite') {
     sessao.dados.suite = texto;
     sessao.etapa = 'reserva_data';
-    enviarMensagem(tel, 'Qual a data e horario desejados?\n(Ex: 15/07/2025 as 20h)');
+    enviarMensagem(tel, '\u{1F4C5} Qual a *data e horario* desejados?\n_(Ex: 15/07/2025 as 20h)_');
     return;
   }
 
   if (etapa === 'reserva_data') {
     sessao.dados.data = texto;
     sessao.etapa = 'reserva_espumante';
-    enviarMensagem(tel, 'Qual espumante voce prefere?\n\n1 - Chuva de Prata\n2 - Santa Colina');
+    enviarMensagem(tel, '\u{1F37E} Qual espumante voce prefere?\n\n1 - Chuva de Prata\n2 - Santa Colina');
     return;
   }
 
@@ -273,7 +319,7 @@ function processarReserva(tel, texto, sessao) {
     }
     sessao.etapa = 'reserva_frase';
     enviarMensagem(tel,
-      'Qual frase voce quer no lencol personalizado?\n\n' +
+      '\u{1F4AC} Qual *frase* voce quer no lencol personalizado?\n\n' +
       'Exemplos:\n' +
       '- Eu te amo\n' +
       '- Parabens pelo nosso aniversario\n' +
@@ -286,17 +332,17 @@ function processarReserva(tel, texto, sessao) {
   if (etapa === 'reserva_frase') {
     sessao.dados.frase = texto;
 
-    var resumo =
-      'Resumo da sua reserva:\n\n' +
+    const resumo =
+      '\u{1F4CB} *Resumo da sua reserva:*\n\n' +
       'Suite: ' + sessao.dados.suite + '\n' +
       'Data/hora: ' + sessao.dados.data + '\n' +
       'Espumante: ' + sessao.dados.espumante + '\n' +
       'Frase: "' + sessao.dados.frase + '"\n\n' +
-      'Dados recebidos! Um atendente ira confirmar sua reserva em breve.';
+      '\u2705 Dados recebidos! Um atendente ira confirmar sua reserva em breve. \u{1F339}';
 
     enviarMensagem(tel, resumo);
 
-    var dadosAlerta =
+    const dadosAlerta =
       'Suite: ' + sessao.dados.suite + '\n' +
       'Data/hora: ' + sessao.dados.data + '\n' +
       'Espumante: ' + sessao.dados.espumante + '\n' +
@@ -314,9 +360,9 @@ function processarReserva(tel, texto, sessao) {
 //  PROCESSADOR PRINCIPAL DE MENSAGENS
 // ============================================================
 function processarMensagem(tel, textoOriginal) {
-  var texto  = textoOriginal.trim();
-  var txtMin = texto.toLowerCase();
-  var sessao = getSessao(tel);
+  const texto  = textoOriginal.trim();
+  const txtMin = texto.toLowerCase();
+  const sessao = getSessao(tel);
 
   console.log('[MSG] ' + tel + ': "' + texto + '" | etapa: ' + sessao.etapa + ' | humano: ' + sessao.atendimento_humano);
 
@@ -343,7 +389,7 @@ function processarMensagem(tel, textoOriginal) {
     alertarDono('reclamacao', tel, texto, null);
     sessao.atendimento_humano = true;
     enviarMensagem(tel,
-      'Lamentamos muito que sua experiencia nao tenha sido a esperada.\n\n' +
+      'Lamentamos muito que sua experiencia nao tenha sido a esperada. \u{1F614}\n\n' +
       'Sua satisfacao e muito importante para nos. Estou chamando um atendente agora. Aguarde!'
     );
     return;
@@ -354,7 +400,7 @@ function processarMensagem(tel, textoOriginal) {
     alertarDono('esquecido', tel, texto, null);
     sessao.atendimento_humano = true;
     enviarMensagem(tel,
-      'Vamos te ajudar a recuperar seu item o quanto antes!\n\n' +
+      'Vamos te ajudar a recuperar seu item o quanto antes! \u{1F60A}\n\n' +
       'Estou chamando um atendente que ira verificar e providenciar a devolucao. Aguarde!'
     );
     return;
@@ -364,7 +410,7 @@ function processarMensagem(tel, textoOriginal) {
   if (contem(texto, KW_ATENDENTE) || txtMin === '0') {
     alertarDono('atendente', tel, texto, null);
     sessao.atendimento_humano = true;
-    enviarMensagem(tel, 'Certo! Estou chamando um atendente. Em breve alguem ira te responder.');
+    enviarMensagem(tel, 'Certo! Estou chamando um atendente. Em breve alguem ira te responder. \u{1F60A}');
     return;
   }
 
@@ -372,98 +418,115 @@ function processarMensagem(tel, textoOriginal) {
   if (contem(texto, KW_RESERVAR) || txtMin === 'reservar') {
     sessao.etapa = 'reserva_suite';
     enviarMensagem(tel,
-      'Reserva com Decoracao Especial\n\n' +
+      '\u{1F339} *Reserva com Decoracao Especial*\n\n' +
       'Otimo! Para qual suite voce gostaria de reservar?\n' +
       '- Luxo\n- Hidro\n- Hidro Premium'
     );
     return;
   }
 
-  // 8. Fotos
-  if (contem(texto, KW_FOTO) || txtMin === '6') {
-    enviarMensagem(tel, 'Galeria de fotos do Motel Lamore:\n' + FOTOS_URL);
+  // 8. Informacoes sobre reserva
+  if (contem(texto, KW_RESERVA_INFO) || contem(texto, ['reserva','reservar'])) {
+    enviarMensagem(tel, RESERVAS_MSG);
     sessao.etapa = 'menu';
     return;
   }
 
-  // 9. Como chegar
+  // 9. Diferenca entre suites
+  if (contem(texto, KW_DIFERENCA)) {
+    enviarMensagem(tel, DIFERENCA_SUITES);
+    sessao.etapa = 'menu';
+    return;
+  }
+
+  // 10. Fotos
+  if (contem(texto, KW_FOTO) || txtMin === '6') {
+    enviarMensagem(tel,
+      '\u{1F4F8} *Galeria de fotos do Motel Lamore*\n\n' +
+      'Confira todas as nossas suites em detalhes:\n' + FOTOS_URL
+    );
+    sessao.etapa = 'menu';
+    return;
+  }
+
+  // 11. Como chegar
   if (contem(texto, KW_CHEGAR) || txtMin === '9') {
     enviarMensagem(tel,
-      'Motel Lamore\n' +
+      '\u{1F4CD} *Motel Lamore*\n' +
       'Rua Ana Neri, 501 - Ourinhos/SP\n\n' +
-      'Estacionamento coberto e privativo, total discricao garantida.\n\n' +
-      'Abertos 24 horas!\n\n' +
+      '\u{1F697} Estacionamento coberto e privativo, total discricao garantida.\n\n' +
+      'Abertos 24 horas! \u{1F60A}\n\n' +
       MAPS_URL
     );
     sessao.etapa = 'menu';
     return;
   }
 
-  // 10. Disponibilidade
+  // 12. Disponibilidade
   if (contem(texto, KW_DISPONIVEL) || txtMin === '8') {
     enviarMensagem(tel,
       'Para verificar a disponibilidade entre em contato com nossa recepcao:\n\n' +
-      TEL_REC + '\n\nAtendemos 24 horas, todos os dias!'
+      '\u{1F4DE} *' + TEL_REC + '*\n\nAtendemos 24 horas, todos os dias!'
     );
     sessao.etapa = 'menu';
     return;
   }
 
-  // 11. Decoracao especial
-  if (txtMin === '7' || contem(texto, ['decoracao','decoracao especial','decoração','decoração especial'])) {
+  // 13. Decoracao especial
+  if (txtMin === '7' || contem(texto, ['decoracao','decoracao especial'])) {
     enviarMensagem(tel, DECORACAO_MSG);
     sessao.etapa = 'menu';
     return;
   }
 
-  // 12. Horarios e precos
-  if (contem(texto, KW_HORARIO)) {
+  // 14. Horarios e precos
+  if (contem(texto, KW_HORARIO) || txtMin === '1' && contem(texto, ['preco','valor'])) {
     enviarMensagem(tel, HORARIOS_MSG);
     sessao.etapa = 'menu';
     return;
   }
 
-  // 13. Menu de suites
-  if (txtMin === '1' || contem(texto, ['ver suites','ver suítes','suites e precos','suítes e preços'])) {
+  // 15. Menu de suites
+  if (txtMin === '1' || contem(texto, ['ver suites','suites e precos'])) {
     enviarMensagem(tel, MENU_SUITES);
     sessao.etapa = 'menu';
     return;
   }
 
-  // 14. Suites individuais
-  if (txtMin === '2' || contem(texto, ['standart','standard','suite standart','suíte standart'])) {
+  // 16. Suites individuais
+  if (txtMin === '2' || contem(texto, ['standart','standard','suite standart'])) {
     enviarMensagem(tel, SUITE_STANDART);
     sessao.etapa = 'menu';
     return;
   }
-  if (txtMin === '3' || contem(texto, ['suite luxo','suíte luxo','luxo'])) {
+  if (txtMin === '3' || contem(texto, ['suite luxo','luxo'])) {
     enviarMensagem(tel, SUITE_LUXO);
     sessao.etapa = 'menu';
     return;
   }
-  if (txtMin === '4' || contem(texto, ['suite hidro','suíte hidro','hidromassagem','hidro'])) {
+  if (txtMin === '4' || contem(texto, ['suite hidro','hidromassagem','hidro'])) {
     enviarMensagem(tel, SUITE_HIDRO);
     sessao.etapa = 'menu';
     return;
   }
-  if (txtMin === '5' || contem(texto, ['hidro premium','suite premium','suíte premium','premium'])) {
+  if (txtMin === '5' || contem(texto, ['hidro premium','suite premium','premium'])) {
     enviarMensagem(tel, SUITE_PREMIUM);
     sessao.etapa = 'menu';
     return;
   }
 
-  // 15. Saudacao / menu inicial
+  // 17. Saudacao / menu inicial
   if (contem(texto, KW_OI) || sessao.etapa === 'menu') {
     enviarMensagem(tel, MENU_PRINCIPAL);
     sessao.etapa = 'aguardando';
     return;
   }
 
-  // 16. Fallback
+  // 18. Fallback
   enviarMensagem(tel,
-    'Nao entendi muito bem.\n\n' +
+    'Nao entendi muito bem. \u{1F60A}\n\n' +
     'Digite um numero do menu:\n\n' +
-    '1 - Ver suites | 2 a 5 - Suites especificas\n' +
+    '1 - Ver suites | 2 a 5 - Suites\n' +
     '6 - Fotos | 7 - Decoracao\n' +
     '8 - Disponibilidade | 9 - Como chegar | 0 - Atendente'
   );
@@ -472,20 +535,20 @@ function processarMensagem(tel, textoOriginal) {
 // ============================================================
 //  SERVIDOR HTTP
 // ============================================================
-var server = http.createServer(function(req, res) {
+const server = http.createServer(function(req, res) {
   if (req.method !== 'POST' || req.url !== '/webhook') {
     res.writeHead(200);
     res.end('Layla - Motel Lamore online');
     return;
   }
 
-  var body = '';
+  let body = '';
   req.on('data', function(chunk) { body += chunk; });
   req.on('end', function() {
     try {
-      var payload    = JSON.parse(body);
-      var textoMsg   = '';
-      var telMsg     = payload.phone || payload.from || payload.to || '';
+      const payload  = JSON.parse(body);
+      let textoMsg   = '';
+      const telMsg   = payload.phone || payload.from || payload.to || '';
 
       if (payload.text && payload.text.message) {
         textoMsg = payload.text.message;
@@ -493,24 +556,26 @@ var server = http.createServer(function(req, res) {
         textoMsg = payload.body;
       }
 
-      // Mensagem enviada pelo atendente
+      // Mensagem enviada pelo atendente (fromMe)
       if (payload.fromMe) {
-        var telCliente = payload.phone || payload.to || '';
-        var txtEnv     = textoMsg.trim().toLowerCase();
+        const telCliente = payload.phone || payload.to || '';
+        const txtEnv     = textoMsg.trim().toLowerCase();
 
         if (txtEnv === 'atendimento encerrado') {
+          // Reativa a Layla para este cliente
           if (sessoes[telCliente]) {
             sessoes[telCliente].atendimento_humano = false;
             sessoes[telCliente].etapa = 'menu';
           }
           console.log('[REATIVADO] Layla reativada para ' + telCliente);
         } else if (telCliente && textoMsg) {
+          // Atendente enviou mensagem — pausa a Layla automaticamente
           if (!sessoes[telCliente]) {
             sessoes[telCliente] = { etapa: 'menu', dados: {}, atendimento_humano: false };
           }
           if (!sessoes[telCliente].atendimento_humano) {
             sessoes[telCliente].atendimento_humano = true;
-            console.log('[PAUSADO] Layla pausada para ' + telCliente);
+            console.log('[PAUSADO] Layla pausada automaticamente para ' + telCliente);
           }
         }
         res.writeHead(200);
@@ -533,10 +598,7 @@ var server = http.createServer(function(req, res) {
 
 server.listen(CONFIG.PORTA, function() {
   console.log('');
-  console.log('LAYLA - Assistente Virtual Motel Lamore');
+  console.log('LAYLA v3.0 - Assistente Virtual Motel Lamore');
   console.log('Servidor rodando na porta ' + CONFIG.PORTA);
   console.log('');
-  if (CONFIG.ZAPI_INSTANCE === 'SEU_INSTANCE_ID') {
-    console.log('ATENCAO: Preencha a secao CONFIG com seus dados do Z-API!');
-  }
 });
