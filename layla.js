@@ -1,6 +1,6 @@
 // ============================================================
 //  LAYLA - Assistente Virtual do Motel Lamore
-//  Versao 2.0 | Ourinhos/SP
+//  Versao 3.0 | Ourinhos/SP
 // ============================================================
 
 const http  = require('http');
@@ -12,12 +12,15 @@ const CONFIG = {
   ZAPI_CLIENT_TOKEN: 'F4cfafb1e17054b309e978e11d94ad1adS',
   NUMERO_DONO:       '5543996066590',
   PORTA:             process.env.PORT || 3000,
+  TIMEOUT_HUMANO_MS: 5 * 60 * 1000, // 5 minutos
 };
 
 const FOTOS_URL = 'https://drive.google.com/drive/folders/1mW4xbKAGvySzm3SdGX_BLqBdiPOkwz2B';
 const MAPS_URL  = 'https://maps.google.com/?q=Rua+Ana+Neri+501+Ourinhos+SP';
 const TEL_REC   = '(14) 3324-6489';
-const sessoes   = {};
+
+// sessoes: { etapa, dados, atendimentoHumano, timerHumano }
+const sessoes = {};
 
 const PERIODOS =
   '📅 *Período Semana:*\nSegunda-feira às 6h até Quinta-feira às 18h\n' +
@@ -45,10 +48,35 @@ const FRASES_LISTA = [
 ];
 
 function getSessao(tel) {
-  if (!sessoes[tel]) sessoes[tel] = { etapa: 'menu', dados: {} };
+  if (!sessoes[tel]) sessoes[tel] = { etapa: 'menu', dados: {}, atendimentoHumano: false, timerHumano: null };
   return sessoes[tel];
 }
 
+// ============================================================
+//  MODO HUMANO
+// ============================================================
+function ativarModoHumano(tel) {
+  const sessao = getSessao(tel);
+  sessao.atendimentoHumano = true;
+  if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
+  console.log(`[HUMANO ATIVO] ${tel}`);
+}
+
+function renovarTimerHumano(tel) {
+  const sessao = getSessao(tel);
+  if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
+  sessao.timerHumano = setTimeout(() => {
+    sessao.atendimentoHumano = false;
+    sessao.timerHumano = null;
+    sessao.etapa = 'menu';
+    console.log(`[HUMANO ENCERRADO] ${tel} - Layla voltou a responder`);
+    enviarMensagem(tel, 'Olá! Sou a Layla, assistente virtual do *Motel Lamore* 🌹\n\nCaso precise de algo mais, estou aqui para ajudar!\n\nDigite *menu* para ver as opções.');
+  }, CONFIG.TIMEOUT_HUMANO_MS);
+}
+
+// ============================================================
+//  ENVIO DE MENSAGEM
+// ============================================================
 function enviarMensagem(telefone, texto) {
   const body = JSON.stringify({ phone: telefone, message: texto });
   const opts = {
@@ -94,6 +122,7 @@ const SUITES = {
     '✅ TV\n✅ Ar-condicionado\n✅ Frigobar\n' +
     '✅ Ducha higiênica _(não possui chuveiro)_\n' +
     '🚗 Estacionamento coberto e privativo\n\n' +
+    '⚠️ _Esta suíte não possui opção de pernoite._\n\n' +
     '💰 *2 horas:*\n' +
     '• Semana: R$ 50,00 (hora adicional R$ 20)\n' +
     '• Fim de semana: R$ 55,00 (hora adicional R$ 20)\n\n' +
@@ -185,6 +214,14 @@ const DECORACAO =
   '3 - Luxo | 4 - Hidro | 5 - Premium\n\n' +
   'Ou digite *reservar* para iniciar o agendamento.';
 
+const PERNOITE_INFO =
+  '🌙 *Opções de Pernoite (12h)*\n\n' +
+  '✨ Luxo — R$ 179 (semana) | R$ 269 (FDS)\n' +
+  '🛁 Hidro — R$ 299 (semana) | R$ 419 (FDS)\n' +
+  '👑 Premium — R$ 329 (semana) | R$ 439 (FDS)\n\n' +
+  PERIODOS + '\n\n' +
+  'Qual suíte te interessa?\n3 - Luxo | 4 - Hidro | 5 - Premium';
+
 // ============================================================
 //  FLUXO DE RESERVA
 // ============================================================
@@ -194,35 +231,24 @@ function processarReserva(tel, texto, sessao) {
     sessao.etapa = 'reserva_data';
     enviarMensagem(tel,
       '📅 Qual a *data e horário* desejados?\n\n' +
-      '⚠️ *Atenção:* As reservas com decoração especial devem ser feitas com no mínimo *48 horas de antecedência*.\n\n' +
+      '⚠️ *Atenção:* Reservas com decoração especial devem ser feitas com no mínimo *48 horas de antecedência*.\n\n' +
       '_Ex: 20/07/2025 às 20h_'
     );
   } else if (sessao.etapa === 'reserva_data') {
     sessao.dados.data = texto;
     sessao.etapa = 'reserva_espumante';
-    enviarMensagem(tel,
-      '🍾 Qual espumante você prefere?\n\n' +
-      '1 - Chuva de Prata\n' +
-      '2 - Santa Colina'
-    );
+    enviarMensagem(tel, '🍾 Qual espumante você prefere?\n\n1 - Chuva de Prata\n2 - Santa Colina');
   } else if (sessao.etapa === 'reserva_espumante') {
     sessao.dados.espumante = texto === '1' ? 'Chuva de Prata' : texto === '2' ? 'Santa Colina' : texto;
     sessao.etapa = 'reserva_frase';
     enviarMensagem(tel,
-      '💬 Qual frase você quer no lençol personalizado?\n\n' +
-      'Digite o número da frase:\n\n' +
-      FRASES_DECORACAO + '\n\n' +
-      'Ou escreva uma frase própria!'
+      '💬 Qual frase você quer no lençol personalizado?\n\nDigite o número:\n\n' +
+      FRASES_DECORACAO + '\n\nOu escreva uma frase própria!'
     );
   } else if (sessao.etapa === 'reserva_frase') {
     const num = parseInt(texto);
-    if (num >= 1 && num <= 8) {
-      sessao.dados.frase = FRASES_LISTA[num - 1];
-    } else {
-      sessao.dados.frase = texto;
-    }
+    sessao.dados.frase = (num >= 1 && num <= 8) ? FRASES_LISTA[num - 1] : texto;
     sessao.etapa = 'menu';
-
     const resumo =
       '📋 *Resumo da sua reserva:*\n\n' +
       `🛏 Suíte: ${sessao.dados.suite}\n` +
@@ -230,7 +256,6 @@ function processarReserva(tel, texto, sessao) {
       `🍾 Espumante: ${sessao.dados.espumante}\n` +
       `💬 Frase: "${sessao.dados.frase}"\n\n` +
       '✅ Dados recebidos! Um atendente irá confirmar sua reserva em breve. Obrigada! 🌹';
-
     enviarMensagem(tel, resumo);
     alertarDono('decoracao', tel, 'Reserva com decoração solicitada',
       `Suíte: ${sessao.dados.suite}\nData/hora: ${sessao.dados.data}\nEspumante: ${sessao.dados.espumante}\nFrase: "${sessao.dados.frase}"`
@@ -242,70 +267,114 @@ function processarReserva(tel, texto, sessao) {
 // ============================================================
 //  PROCESSADOR PRINCIPAL
 // ============================================================
-function processarMensagem(tel, textoOriginal) {
+function processarMensagem(tel, textoOriginal, fromMe) {
   const texto  = textoOriginal.trim();
   const sessao = getSessao(tel);
-  console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa}`);
 
+  // Mensagem enviada pelo atendente (fromMe=true) — renovar timer
+  if (fromMe) {
+    if (sessao.atendimentoHumano) {
+      renovarTimerHumano(tel);
+      console.log(`[ATENDENTE ATIVO] ${tel} - timer renovado`);
+    }
+    return;
+  }
+
+  console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa} | humano: ${sessao.atendimentoHumano}`);
+
+  // Se atendimento humano ativo, Layla não responde
+  if (sessao.atendimentoHumano) {
+    console.log(`[IGNORADO] ${tel} - atendimento humano ativo`);
+    return;
+  }
+
+  // Proteção número privado
   if (contem(texto, ['numero do dono','seu numero','numero interno','43996','99606','numero privado'])) {
     enviarMensagem(tel, 'Não tenho essa informação disponível 😊 Posso te ajudar com suítes, preços ou agendamentos!');
     return;
   }
 
+  // Fluxo de reserva ativo
   if (sessao.etapa.startsWith('reserva_')) { processarReserva(tel, texto, sessao); return; }
 
+  // Reclamação
   if (contem(texto, ['reclamacao','reclamação','reclamar','problema','pessimo','péssimo','horrivel','horrível','insatisfeito','nao gostei','não gostei','sujo','quebrado','ruim'])) {
     alertarDono('reclamacao', tel, texto, null);
-    enviarMensagem(tel, 'Lamentamos muito que sua experiência não tenha sido a esperada 😔\n\nSua satisfação é muito importante para nós. Estou chamando um atendente agora para resolver isso da melhor forma. Aguarde!');
+    enviarMensagem(tel, 'Lamentamos muito que sua experiência não tenha sido a esperada 😔\n\nSua satisfação é muito importante para nós. Estou chamando um atendente agora. Aguarde!');
+    ativarModoHumano(tel);
+    renovarTimerHumano(tel);
     return;
   }
 
+  // Item esquecido
   if (contem(texto, ['esqueci','esquecido','deixei','bolsa','carteira','celular','chave','documento','oculos','óculos','roupa','pertence'])) {
     alertarDono('esquecido', tel, texto, null);
     enviarMensagem(tel, 'Que situação chata! Vamos te ajudar a recuperar seu item o quanto antes 😊\n\nEstou chamando um atendente. Aguarde!');
+    ativarModoHumano(tel);
+    renovarTimerHumano(tel);
     return;
   }
 
+  // Atendente humano
+  if (contem(texto, ['atendente','humano','falar com','quero falar','me ajuda']) || texto === '0') {
+    enviarMensagem(tel, 'Certo! Estou chamando um atendente. Aguarde um momento 😊\n\nAssim que ele finalizar o atendimento, estarei aqui novamente!');
+    alertarDono('reclamacao', tel, `Solicitou atendente humano: "${texto}"`, null);
+    ativarModoHumano(tel);
+    renovarTimerHumano(tel);
+    return;
+  }
+
+  // Reserva com decoração
   if (contem(texto, ['reservar','reserva','agendar']) || texto === 'reservar') {
     sessao.etapa = 'reserva_suite';
     enviarMensagem(tel, '🌹 *Reserva com Decoração Especial*\n\nPara qual suíte você gostaria de reservar?\n• Luxo\n• Hidro\n• Hidro Premium');
     return;
   }
 
+  // Pernoite / dormir
+  if (contem(texto, ['pernoite','passar a noite','pra noite','para a noite','so dormir','só dormir','passar a noite','ficar a noite','noite toda','noite inteira','dormir'])) {
+    enviarMensagem(tel, PERNOITE_INFO);
+    return;
+  }
+
+  // Fotos
   if (contem(texto, ['foto','fotos','imagem','ver','mostra']) || texto === '6') {
     enviarMensagem(tel, `📸 *Galeria de fotos do Motel Lamore*\n\nConfira todas as nossas suítes:\n${FOTOS_URL}`);
     return;
   }
 
+  // Como chegar
   if (contem(texto, ['endereco','endereço','onde fica','localizacao','localização','como chegar','chegar','mapa']) || texto === '9') {
     enviarMensagem(tel, `📍 *Motel Lamore*\nRua Ana Neri, 501 — Ourinhos/SP\n\n🚗 Estacionamento coberto e privativo.\n\nAbertos 24 horas! 😊\n\n${MAPS_URL}`);
     return;
   }
 
+  // Disponibilidade
   if (contem(texto, ['disponivel','disponível','disponibilidade','tem quarto','tem vaga','livre','vago']) || texto === '8') {
     enviarMensagem(tel, `Para verificar disponibilidade em tempo real:\n\n📞 *${TEL_REC}*\n\nAtendemos 24 horas!`);
     return;
   }
 
-  if (contem(texto, ['atendente','humano','falar com','quero falar']) || texto === '0') {
-    enviarMensagem(tel, 'Certo! Estou chamando um atendente. Aguarde um momento 😊');
-    alertarDono('reclamacao', tel, `Solicitou atendente humano: "${texto}"`, null);
-    return;
-  }
-
+  // Decoração
   if (texto === '7' || contem(texto, ['decoracao','decoração'])) { enviarMensagem(tel, DECORACAO); return; }
-  if (texto === '1' || contem(texto, ['horario','horário','precos','preços','valores'])) { enviarMensagem(tel, HORARIOS_PRECOS); return; }
+
+  // Horários e preços
+  if (texto === '1' || contem(texto, ['horario','horário','preco','preço','valor','valores'])) { enviarMensagem(tel, HORARIOS_PRECOS); return; }
+
+  // Suítes
   if (texto === '2' || contem(texto, ['standart','standard'])) { enviarMensagem(tel, SUITES.standart); return; }
   if (texto === '3' || contem(texto, ['luxo'])) { enviarMensagem(tel, SUITES.luxo); return; }
   if (texto === '4' || contem(texto, ['hidro','hidromassagem'])) { enviarMensagem(tel, SUITES.hidro); return; }
   if (texto === '5' || contem(texto, ['premium'])) { enviarMensagem(tel, SUITES.premium); return; }
 
+  // Saudação / menu
   if (contem(texto, ['oi','olá','ola','bom dia','boa tarde','boa noite','menu','inicio','início']) || sessao.etapa === 'menu') {
     enviarMensagem(tel, MENU);
     sessao.etapa = 'aguardando';
     return;
   }
 
+  // Fallback
   enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número:\n1-Preços | 6-Fotos | 7-Decoração\n8-Disponibilidade | 9-Endereço | 0-Atendente');
 }
 
@@ -319,10 +388,10 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const payload = JSON.parse(body);
-        if (payload.fromMe) { res.writeHead(200); res.end('ok'); return; }
-        const tel   = payload.phone || payload.from || '';
-        const texto = payload.text?.message || payload.body || '';
-        if (tel && texto) processarMensagem(tel, texto);
+        const tel     = payload.phone || payload.from || '';
+        const texto   = payload.text?.message || payload.body || '';
+        const fromMe  = payload.fromMe || false;
+        if (tel && texto) processarMensagem(tel, texto, fromMe);
       } catch (e) { console.error('[ERRO]', e.message); }
       res.writeHead(200); res.end('ok');
     });
