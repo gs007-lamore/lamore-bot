@@ -14,7 +14,8 @@ ZAPI_INSTANCE:     ‘3F10476A93B9C14397CFBA665B49BD70’,
 ZAPI_TOKEN:        ‘060575DE041301E87AB1A483’,
 ZAPI_CLIENT_TOKEN: ‘F4cfafb1e17054b309e978e11d94ad1adS’,
 NUMERO_DONO:       ‘5543996066590’,
-PORTAPORTA: process.env.PORT || 3000,
+PORTA: process.env.PORT || 3000,
+
 ,
 };
 // ============================================================
