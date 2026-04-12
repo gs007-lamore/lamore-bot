@@ -1,6 +1,6 @@
 // ============================================================
 //  LAYLA - Assistente Virtual do Motel Lamore
-//  Versao 3.0 | Ourinhos/SP
+//  Versao 4.0 | Ourinhos/SP
 // ============================================================
 
 const http  = require('http');
@@ -12,15 +12,12 @@ const CONFIG = {
   ZAPI_CLIENT_TOKEN: 'F4cfafb1e17054b309e978e11d94ad1adS',
   NUMERO_DONO:       '5543996066590',
   PORTA:             process.env.PORT || 3000,
-  TIMEOUT_HUMANO_MS: 5 * 60 * 1000, // 5 minutos
 };
 
 const FOTOS_URL = 'https://drive.google.com/drive/folders/1mW4xbKAGvySzm3SdGX_BLqBdiPOkwz2B';
 const MAPS_URL  = 'https://maps.google.com/?q=Rua+Ana+Neri+501+Ourinhos+SP';
 const TEL_REC   = '(14) 3324-6489';
-
-// sessoes: { etapa, dados, atendimentoHumano, timerHumano }
-const sessoes = {};
+const sessoes   = {};
 
 const PERIODOS =
   '📅 *Período Semana:*\nSegunda-feira às 6h até Quinta-feira às 18h\n' +
@@ -47,8 +44,14 @@ const FRASES_LISTA = [
   'Você me faz feliz',
 ];
 
+const VALORES_DECORACAO = {
+  'Suíte Luxo':    { '2 horas': 'R$ 229 (semana) | R$ 259 (FDS)',  'Pernoite (12h)': 'R$ 329 (semana) | R$ 419 (FDS)' },
+  'Suíte Hidro':   { '2 horas': 'R$ 379 (semana) | R$ 409 (FDS)',  'Pernoite (12h)': 'R$ 529 (semana) | R$ 559 (FDS)' },
+  'Hidro Premium': { '2 horas': 'R$ 399 (semana) | R$ 429 (FDS)',  'Pernoite (12h)': 'R$ 549 (semana) | R$ 579 (FDS)' },
+};
+
 function getSessao(tel) {
-  if (!sessoes[tel]) sessoes[tel] = { etapa: 'menu', dados: {}, atendimentoHumano: false, timerHumano: null };
+  if (!sessoes[tel]) sessoes[tel] = { etapa: 'menu', dados: {}, atendimentoHumano: false };
   return sessoes[tel];
 }
 
@@ -58,20 +61,15 @@ function getSessao(tel) {
 function ativarModoHumano(tel) {
   const sessao = getSessao(tel);
   sessao.atendimentoHumano = true;
-  if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
   console.log(`[HUMANO ATIVO] ${tel}`);
 }
 
-function renovarTimerHumano(tel) {
+function desativarModoHumano(tel) {
   const sessao = getSessao(tel);
-  if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
-  sessao.timerHumano = setTimeout(() => {
-    sessao.atendimentoHumano = false;
-    sessao.timerHumano = null;
-    sessao.etapa = 'menu';
-    console.log(`[HUMANO ENCERRADO] ${tel} - Layla voltou a responder`);
-    enviarMensagem(tel, 'Olá! Sou a Layla, assistente virtual do *Motel Lamore* 🌹\n\nCaso precise de algo mais, estou aqui para ajudar!\n\nDigite *menu* para ver as opções.');
-  }, CONFIG.TIMEOUT_HUMANO_MS);
+  sessao.atendimentoHumano = false;
+  sessao.etapa = 'menu';
+  console.log(`[HUMANO ENCERRADO] ${tel} - Layla voltou a responder`);
+  enviarMensagem(tel, 'Olá! Sou a Layla, assistente virtual do *Motel Lamore* 🌹\n\nCaso precise de algo mais, estou aqui para ajudar!\n\nDigite *menu* para ver as opções.');
 }
 
 // ============================================================
@@ -210,9 +208,7 @@ const DECORACAO =
   '🛁 Toalhas e tapetes personalizados\n' +
   '🍾 Espumante no balde com gelo + 2 taças\n\n' +
   '📌 *Reserva com mínimo 48h de antecedência.*\n\n' +
-  'Para qual suíte você gostaria de reservar?\n' +
-  '3 - Luxo | 4 - Hidro | 5 - Premium\n\n' +
-  'Ou digite *reservar* para iniciar o agendamento.';
+  'Para reservar, digite *reservar*.';
 
 const PERNOITE_INFO =
   '🌙 *Opções de Pernoite (12h)*\n\n' +
@@ -226,41 +222,116 @@ const PERNOITE_INFO =
 //  FLUXO DE RESERVA
 // ============================================================
 function processarReserva(tel, texto, sessao) {
+
+  // Etapa 0: confirmar condições
+  if (sessao.etapa === 'reserva_confirmar') {
+    if (texto === '1' || contem(texto, ['sim','quero','pode','continuar','yes'])) {
+      sessao.etapa = 'reserva_suite';
+      enviarMensagem(tel,
+        '🛏 Qual suíte você prefere?\n\n' +
+        '1 - Suíte Luxo\n' +
+        '2 - Suíte Hidro\n' +
+        '3 - Hidro Premium'
+      );
+    } else {
+      sessao.etapa = 'menu';
+      enviarMensagem(tel, 'Tudo bem! Se precisar de algo mais é só me chamar 😊\n\nDigite *menu* para ver as opções.');
+    }
+    return;
+  }
+
+  // Etapa 1: escolha da suíte
   if (sessao.etapa === 'reserva_suite') {
-    sessao.dados.suite = texto;
+    if (texto === '1' || contem(texto, ['luxo'])) {
+      sessao.dados.suite = 'Suíte Luxo';
+    } else if (texto === '2' || (contem(texto, ['hidro']) && !contem(texto, ['premium']))) {
+      sessao.dados.suite = 'Suíte Hidro';
+    } else if (texto === '3' || contem(texto, ['premium'])) {
+      sessao.dados.suite = 'Hidro Premium';
+    } else {
+      enviarMensagem(tel, 'Por favor, escolha uma opção válida:\n1 - Suíte Luxo\n2 - Suíte Hidro\n3 - Hidro Premium');
+      return;
+    }
+    sessao.etapa = 'reserva_periodo';
+    enviarMensagem(tel, '⏰ Qual período você prefere?\n\n1 - 2 horas\n2 - Pernoite (12h)');
+    return;
+  }
+
+  // Etapa 2: período
+  if (sessao.etapa === 'reserva_periodo') {
+    if (texto === '1' || contem(texto, ['2 hora','duas hora','2h'])) {
+      sessao.dados.periodo = '2 horas';
+    } else if (texto === '2' || contem(texto, ['pernoite','12h','noite'])) {
+      sessao.dados.periodo = 'Pernoite (12h)';
+    } else {
+      enviarMensagem(tel, 'Por favor, escolha:\n1 - 2 horas\n2 - Pernoite (12h)');
+      return;
+    }
     sessao.etapa = 'reserva_data';
     enviarMensagem(tel,
       '📅 Qual a *data e horário* desejados?\n\n' +
-      '⚠️ *Atenção:* Reservas com decoração especial devem ser feitas com no mínimo *48 horas de antecedência*.\n\n' +
+      '⚠️ *Atenção:* A reserva deve ser feita com no mínimo *48 horas de antecedência*.\n\n' +
       '_Ex: 20/07/2025 às 20h_'
     );
-  } else if (sessao.etapa === 'reserva_data') {
+    return;
+  }
+
+  // Etapa 3: data
+  if (sessao.etapa === 'reserva_data') {
     sessao.dados.data = texto;
     sessao.etapa = 'reserva_espumante';
     enviarMensagem(tel, '🍾 Qual espumante você prefere?\n\n1 - Chuva de Prata\n2 - Santa Colina');
-  } else if (sessao.etapa === 'reserva_espumante') {
-    sessao.dados.espumante = texto === '1' ? 'Chuva de Prata' : texto === '2' ? 'Santa Colina' : texto;
+    return;
+  }
+
+  // Etapa 4: espumante
+  if (sessao.etapa === 'reserva_espumante') {
+    if (texto === '1' || contem(texto, ['prata'])) {
+      sessao.dados.espumante = 'Chuva de Prata';
+    } else if (texto === '2' || contem(texto, ['colina','santa'])) {
+      sessao.dados.espumante = 'Santa Colina';
+    } else {
+      enviarMensagem(tel, 'Por favor, escolha:\n1 - Chuva de Prata\n2 - Santa Colina');
+      return;
+    }
     sessao.etapa = 'reserva_frase';
     enviarMensagem(tel,
-      '💬 Qual frase você quer no lençol personalizado?\n\nDigite o número:\n\n' +
-      FRASES_DECORACAO + '\n\nOu escreva uma frase própria!'
+      '💬 Qual frase você quer no lençol personalizado?\n\n' +
+      'Digite apenas o número da frase:\n\n' +
+      FRASES_DECORACAO
     );
-  } else if (sessao.etapa === 'reserva_frase') {
+    return;
+  }
+
+  // Etapa 5: frase (somente 1 a 8, sem frase livre)
+  if (sessao.etapa === 'reserva_frase') {
     const num = parseInt(texto);
-    sessao.dados.frase = (num >= 1 && num <= 8) ? FRASES_LISTA[num - 1] : texto;
+    if (isNaN(num) || num < 1 || num > 8) {
+      enviarMensagem(tel, 'Por favor, digite apenas o número da frase (1 a 8):\n\n' + FRASES_DECORACAO);
+      return;
+    }
+    sessao.dados.frase = FRASES_LISTA[num - 1];
+
+    const valor = VALORES_DECORACAO[sessao.dados.suite]?.[sessao.dados.periodo] || 'Consulte nossa equipe';
+
     sessao.etapa = 'menu';
     const resumo =
       '📋 *Resumo da sua reserva:*\n\n' +
       `🛏 Suíte: ${sessao.dados.suite}\n` +
+      `⏰ Período: ${sessao.dados.periodo}\n` +
       `📅 Data/hora: ${sessao.dados.data}\n` +
       `🍾 Espumante: ${sessao.dados.espumante}\n` +
-      `💬 Frase: "${sessao.dados.frase}"\n\n` +
-      '✅ Dados recebidos! Um atendente irá confirmar sua reserva em breve. Obrigada! 🌹';
+      `💬 Frase: "${sessao.dados.frase}"\n` +
+      `💰 Valor: ${valor}\n\n` +
+      'Um atendente irá entrar em contato em breve para confirmar sua reserva. Obrigada! 🌹';
+
     enviarMensagem(tel, resumo);
     alertarDono('decoracao', tel, 'Reserva com decoração solicitada',
-      `Suíte: ${sessao.dados.suite}\nData/hora: ${sessao.dados.data}\nEspumante: ${sessao.dados.espumante}\nFrase: "${sessao.dados.frase}"`
+      `Suíte: ${sessao.dados.suite}\nPeríodo: ${sessao.dados.periodo}\nData/hora: ${sessao.dados.data}\nEspumante: ${sessao.dados.espumante}\nFrase: "${sessao.dados.frase}"\nValor: ${valor}`
     );
+    ativarModoHumano(tel);
     sessao.dados = {};
+    return;
   }
 }
 
@@ -271,11 +342,17 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   const texto  = textoOriginal.trim();
   const sessao = getSessao(tel);
 
-  // Mensagem enviada pelo atendente (fromMe=true) — renovar timer
+  // Mensagem enviada pelo dono/atendente (fromMe=true)
   if (fromMe) {
-    if (sessao.atendimentoHumano) {
-      renovarTimerHumano(tel);
-      console.log(`[ATENDENTE ATIVO] ${tel} - timer renovado`);
+    if (texto === '0') {
+      // Dono envia "0" para liberar a Layla (funciona mesmo se humano ja estiver inativo)
+      if (sessao.atendimentoHumano) desativarModoHumano(tel);
+    } else {
+      // Qualquer outra mensagem do dono ativa o modo humano imediatamente
+      if (!sessao.atendimentoHumano) {
+        ativarModoHumano(tel);
+        console.log(`[HUMANO ATIVADO AUTOMATICAMENTE] ${tel}`);
+      }
     }
     return;
   }
@@ -302,7 +379,6 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     alertarDono('reclamacao', tel, texto, null);
     enviarMensagem(tel, 'Lamentamos muito que sua experiência não tenha sido a esperada 😔\n\nSua satisfação é muito importante para nós. Estou chamando um atendente agora. Aguarde!');
     ativarModoHumano(tel);
-    renovarTimerHumano(tel);
     return;
   }
 
@@ -311,7 +387,6 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     alertarDono('esquecido', tel, texto, null);
     enviarMensagem(tel, 'Que situação chata! Vamos te ajudar a recuperar seu item o quanto antes 😊\n\nEstou chamando um atendente. Aguarde!');
     ativarModoHumano(tel);
-    renovarTimerHumano(tel);
     return;
   }
 
@@ -320,25 +395,30 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     enviarMensagem(tel, 'Certo! Estou chamando um atendente. Aguarde um momento 😊\n\nAssim que ele finalizar o atendimento, estarei aqui novamente!');
     alertarDono('reclamacao', tel, `Solicitou atendente humano: "${texto}"`, null);
     ativarModoHumano(tel);
-    renovarTimerHumano(tel);
     return;
   }
 
-  // Reserva com decoração
+  // Reserva com decoração — mostra condições primeiro
   if (contem(texto, ['reservar','reserva','agendar']) || texto === 'reservar') {
-    sessao.etapa = 'reserva_suite';
-    enviarMensagem(tel, '🌹 *Reserva com Decoração Especial*\n\nPara qual suíte você gostaria de reservar?\n• Luxo\n• Hidro\n• Hidro Premium');
+    sessao.etapa = 'reserva_confirmar';
+    enviarMensagem(tel,
+      '🌹 *Reserva com Decoração Especial — Lamore*\n\n' +
+      'Antes de prosseguir, confira as condições:\n\n' +
+      '📌 Realizamos reservas *somente para suítes com decoração especial*\n' +
+      '📌 A reserva deve ser feita com no mínimo *48 horas de antecedência*\n\n' +
+      'Deseja continuar?\n1 - Sim, quero continuar\n2 - Não, obrigado'
+    );
     return;
   }
 
   // Pernoite / dormir
-  if (contem(texto, ['pernoite','passar a noite','pra noite','para a noite','so dormir','só dormir','passar a noite','ficar a noite','noite toda','noite inteira','dormir'])) {
+  if (contem(texto, ['pernoite','passar a noite','pra noite','para a noite','so dormir','só dormir','ficar a noite','noite toda','noite inteira','dormir'])) {
     enviarMensagem(tel, PERNOITE_INFO);
     return;
   }
 
   // Fotos
-  if (contem(texto, ['foto','fotos','imagem','ver','mostra']) || texto === '6') {
+  if (contem(texto, ['foto','fotos','imagem','mostra','galeria']) || texto === '6') {
     enviarMensagem(tel, `📸 *Galeria de fotos do Motel Lamore*\n\nConfira todas as nossas suítes:\n${FOTOS_URL}`);
     return;
   }
@@ -388,9 +468,9 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const payload = JSON.parse(body);
-        const tel     = payload.phone || payload.from || '';
-        const texto   = payload.text?.message || payload.body || '';
-        const fromMe  = payload.fromMe || false;
+        const tel    = payload.phone || payload.from || '';
+        const texto  = payload.text?.message || payload.body || '';
+        const fromMe = payload.fromMe || false;
         if (tel && texto) processarMensagem(tel, texto, fromMe);
       } catch (e) { console.error('[ERRO]', e.message); }
       res.writeHead(200); res.end('ok');
