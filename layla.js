@@ -139,8 +139,8 @@ const SUITES = {
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 179,00 / FDS: R$ 269,00\n\n' +
     PERIODOS + '\n\n' +
-    '🌹 Com decoração especial: a partir de R$ 329,00\n\n' +
-    '✨ _Dica: a Suíte Hidro tem hidromassagem privativa. Digite 4 para conhecer!_',
+    '🌹 Com decoração especial: a partir de R$ 229,00\n\n' +
+    '✨ _Dica: a Suíte Hidro tem hidromassagem privativa. Digite 3 para conhecer!_\n\n_Digite *menu* a qualquer momento para voltar ao início._',
 
   hidro:
     '🛁 *Suíte Hidro*\n\n' +
@@ -152,8 +152,8 @@ const SUITES = {
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 299,00 / FDS: R$ 419,00\n\n' +
     PERIODOS + '\n\n' +
-    '🌹 Com decoração especial: a partir de R$ 529,00\n\n' +
-    '✨ _Dica: para o máximo, a Hidro Premium é nossa suíte top. Digite 5 para conhecer!_',
+    '🌹 Com decoração especial: a partir de R$ 379,00\n\n' +
+    '✨ _Dica: para o máximo, a Hidro Premium é nossa suíte top. Digite 4 para conhecer!_\n\n_Digite *menu* a qualquer momento para voltar ao início._',
 
   premium:
     '👑 *Hidro Premium*\n\n' +
@@ -165,8 +165,8 @@ const SUITES = {
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 329,00 / FDS: R$ 439,00\n\n' +
     PERIODOS + '\n\n' +
-    '🌹 Com decoração especial: a partir de R$ 549,00\n\n' +
-    '🏆 A escolha perfeita para quem quer o melhor!',
+    '🌹 Com decoração especial: a partir de R$ 399,00\n\n' +
+    '🏆 A escolha perfeita para quem quer o melhor!\n\n_Digite *menu* a qualquer momento para voltar ao início._',
 };
 
 const MENU =
@@ -179,7 +179,7 @@ const MENU =
   '4 - Hidro Premium\n' +
   '5 - Ver fotos\n' +
   '6 - Decoração especial\n' +
-  '7 - Disponibilidade de quartos\n' +
+  '7 - Disponibilidade de suítes\n' +
   '8 - Fazer uma reserva\n' +
   '0 - Falar com atendente';
 
@@ -193,7 +193,7 @@ const HORARIOS_PRECOS =
   '           Pernoite: R$ 299 (semana) | R$ 419 (FDS)\n\n' +
   '👑 Premium — 2h: R$ 165 (semana) | R$ 185 (FDS)\n' +
   '             Pernoite: R$ 329 (semana) | R$ 439 (FDS)\n\n' +
-  'Funcionamos *24 horas*, todos os dias!';
+  'Funcionamos *24 horas*, todos os dias!\n\n_Digite *menu* a qualquer momento para voltar ao início._';
 
 const DECORACAO =
   '🌹 *Decoração Especial Lamore*\n\n' +
@@ -207,7 +207,7 @@ const DECORACAO =
   '🛁 Toalhas e tapetes personalizados\n' +
   '🍾 Espumante no balde com gelo + 2 taças\n\n' +
   '📌 *Reserva com mínimo 48h de antecedência.*\n\n' +
-  'Para reservar, digite *reservar*.';
+  'Para reservar, digite *reservar*.\n\n_Digite *menu* a qualquer momento para voltar ao início._';
 
 const PERNOITE_INFO =
   '🌙 *Opções de Pernoite (12h)*\n\n' +
@@ -215,7 +215,7 @@ const PERNOITE_INFO =
   '🛁 Hidro — R$ 299 (semana) | R$ 419 (FDS)\n' +
   '👑 Premium — R$ 329 (semana) | R$ 439 (FDS)\n\n' +
   PERIODOS + '\n\n' +
-  'Qual suíte te interessa?\n3 - Luxo | 4 - Hidro | 5 - Premium';
+  'Qual suíte te interessa?\n2 - Luxo | 3 - Hidro | 4 - Premium\n\n_Digite *menu* a qualquer momento para voltar ao início._';
 
 // ============================================================
 //  FLUXO DE RESERVA
@@ -232,7 +232,7 @@ function processarReserva(tel, texto, sessao) {
         'Por isso pedimos *2 dias de antecedência* para preparar tudo com carinho para você. 🌹\n\n' +
         'Não realizamos reservas para suítes sem decoração especial.\n\n' +
         '📖 Confira nosso catálogo com todos os valores:\nhttps://wa.me/c/5514997915897\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado'
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n\n_Digite *menu* a qualquer momento para voltar ao início._'
       );
     } else if (texto === '2' || contem(texto, ['pernoite','sem decoracao','sem decoração','so pernoite','só pernoite'])) {
       sessao.etapa = 'reserva_pernoite_confirmar';
@@ -246,7 +246,7 @@ function processarReserva(tel, texto, sessao) {
         '💰 *Valores Pernoite (12h):*\n' +
         '• Segunda a quarta-feira: R$ 179,00\n' +
         '• Quinta-feira: R$ 269,00 _(já considerado fim de semana)_\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado'
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n\n_Digite *menu* a qualquer momento para voltar ao início._'
       );
     } else {
       enviarMensagem(tel, 'Por favor, escolha uma opção:\n1 - Com decoração especial\n2 - Pernoite sem decoração (Suíte Luxo)');
@@ -318,6 +318,13 @@ function processarMensagem(tel, textoOriginal, fromMe) {
 
   console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa} | humano: ${sessao.atendimentoHumano}`);
 
+  // Cliente digita menu interrompe qualquer fluxo
+  if (!fromMe && (texto === 'menu' || texto === 'Menu' || texto === 'MENU')) {
+    sessao.etapa = 'aguardando';
+    enviarMensagem(tel, MENU);
+    return;
+  }
+
   // Se atendimento humano ativo, Layla não responde
   if (sessao.atendimentoHumano) {
     console.log(`[IGNORADO] ${tel} - atendimento humano ativo`);
@@ -377,19 +384,19 @@ function processarMensagem(tel, textoOriginal, fromMe) {
 
   // Fotos
   if (contem(texto, ['foto','fotos','imagem','mostra','galeria']) || texto === '5') {
-    enviarMensagem(tel, `📸 *Galeria de fotos do Motel Lamore*\n\nConfira todas as nossas suítes:\n${FOTOS_URL}`);
+    enviarMensagem(tel, `📸 *Galeria de fotos do Motel Lamore*\n\nConfira todas as nossas suítes:\n${FOTOS_URL}\n\n_Digite *menu* a qualquer momento para voltar ao início._`);
     return;
   }
 
   // Como chegar — só por palavras-chave, não mais pelo menu
   if (contem(texto, ['endereco','endereço','onde fica','localizacao','localização','como chegar','chegar','mapa'])) {
-    enviarMensagem(tel, `📍 *Motel Lamore*\nRua Ana Neri, 501 — Ourinhos/SP\n\n🚗 Estacionamento coberto e privativo.\n\nAbertos 24 horas! 😊\n\n${MAPS_URL}`);
+    enviarMensagem(tel, `📍 *Motel Lamore*\nRua Ana Neri, 501 — Ourinhos/SP\n\n🚗 Estacionamento coberto e privativo.\n\nAbertos 24 horas! 😊\n\n${MAPS_URL}\n\n_Digite *menu* a qualquer momento para voltar ao início._`);
     return;
   }
 
   // Disponibilidade
-  if (contem(texto, ['disponivel','disponível','disponibilidade','tem quarto','tem vaga','livre','vago']) || texto === '7') {
-    enviarMensagem(tel, `Para verificar disponibilidade em tempo real:\n\n📞 *${TEL_REC}*\n\nAtendemos 24 horas!`);
+  if (contem(texto, ['disponivel','disponível','disponibilidade','tem suite','tem vaga','livre','vago']) || texto === '7') {
+    enviarMensagem(tel, `Para verificar disponibilidade em tempo real:\n\n📞 *${TEL_REC}*\n\nAtendemos 24 horas!\n\n_Digite *menu* a qualquer momento para voltar ao início._`);
     return;
   }
 
@@ -405,7 +412,14 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   if (texto === '4' || contem(texto, ['premium'])) { enviarMensagem(tel, SUITES.premium); return; }
 
   // Saudação / menu
-  if (contem(texto, ['oi','olá','ola','bom dia','boa tarde','boa noite','menu','inicio','início']) || sessao.etapa === 'menu') {
+  // Cliente digita menu em qualquer momento
+  if (texto === 'menu' || texto === 'Menu' || texto === 'MENU') {
+    enviarMensagem(tel, MENU);
+    sessao.etapa = 'aguardando';
+    return;
+  }
+
+  if (contem(texto, ['oi','olá','ola','bom dia','boa tarde','boa noite','inicio','início']) || sessao.etapa === 'menu') {
     enviarMensagem(tel, MENU);
     sessao.etapa = 'aguardando';
     return;
