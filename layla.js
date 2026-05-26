@@ -195,7 +195,7 @@ const MENU =
   '6 - Ver fotos\n' +
   '7 - Decoração especial\n' +
   '8 - Disponibilidade de quartos\n' +
-  '9 - Como chegar\n' +
+  '9 - Fazer uma reserva\n' +
   '0 - Falar com atendente';
 
 const HORARIOS_PRECOS =
@@ -238,7 +238,42 @@ const PERNOITE_INFO =
 // ============================================================
 function processarReserva(tel, texto, sessao) {
 
-  // Etapa: cliente respondeu sim ou nao apos ver condicoes e catalogo
+  // Etapa 0: cliente escolhe o tipo de reserva
+  if (sessao.etapa === 'reserva_tipo') {
+    if (texto === '1' || contem(texto, ['decoracao','decoração','especial'])) {
+      sessao.etapa = 'reserva_confirmar';
+      enviarMensagem(tel,
+        '🌹 *Reserva com Decoração Especial — Lamore*\n\n' +
+        'Fazemos reservas *somente para suítes com decoração especial*.\n\n' +
+        'Por isso pedimos *2 dias de antecedência* para preparar tudo com carinho para você. 🌹\n\n' +
+        'Não realizamos reservas para suítes sem decoração especial.\n\n' +
+        '📖 Confira nosso catálogo com todos os valores:\nhttps://wa.me/c/5514997915897\n\n' +
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado'
+      );
+    } else if (texto === '2' || contem(texto, ['pernoite','sem decoracao','sem decoração','so pernoite','só pernoite'])) {
+      sessao.etapa = 'menu';
+      enviarMensagem(tel,
+        '🌙 *Reserva de Pernoite — Suíte Luxo*\n\n' +
+        'Oferecemos reserva de pernoite sem decoração somente para a *Suíte Luxo*.\n\n' +
+        '📋 *Condições importantes:*\n' +
+        '⏰ Check-in liberado somente *após as 23h*\n' +
+        '📅 Disponível apenas de *segunda a quinta-feira*\n' +
+        '🚫 Para fins de semana, somente reservas com decoração especial\n\n' +
+        '💰 *Valores Pernoite (12h):*\n' +
+        '• Segunda a quarta-feira: R$ 179,00\n' +
+        '• Quinta-feira: R$ 269,00 _(já considerado fim de semana)_\n\n' +
+        'Um atendente irá entrar em contato em breve para confirmar sua reserva.\n\n' +
+        'Aguarde! 😊'
+      );
+      alertarDono('decoracao', tel, 'Cliente deseja reserva de pernoite sem decoração — Suíte Luxo', null);
+      ativarModoHumano(tel);
+    } else {
+      enviarMensagem(tel, 'Por favor, escolha uma opção:\n1 - Com decoração especial\n2 - Pernoite sem decoração (Suíte Luxo)');
+    }
+    return;
+  }
+
+  // Etapa 1: cliente confirmou reserva com decoração
   if (sessao.etapa === 'reserva_confirmar') {
     if (texto === '1' || contem(texto, ['sim','quero','pode','continuar','yes'])) {
       sessao.etapa = 'menu';
@@ -323,16 +358,14 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     return;
   }
 
-  // Reserva com decoração — mostra condições e catálogo
-  if (contem(texto, ['reservar','reserva','agendar']) || texto === 'reservar') {
-    sessao.etapa = 'reserva_confirmar';
+  // Reserva — opção 9 ou palavras-chave
+  if (contem(texto, ['reservar','reserva','agendar']) || texto === 'reservar' || texto === '9') {
+    sessao.etapa = 'reserva_tipo';
     enviarMensagem(tel,
       '🌹 *Reservas — Motel Lamore*\n\n' +
-      'Fazemos reservas *somente para suítes com decoração especial*.\n\n' +
-      'Por isso pedimos *2 dias de antecedência* para preparar tudo com carinho para você. 🌹\n\n' +
-      'Não realizamos reservas para suítes sem decoração especial.\n\n' +
-      '📖 Confira nosso catálogo com todos os valores:\nhttps://wa.me/c/5514997915897\n\n' +
-      'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado'
+      'Que tipo de reserva você deseja fazer?\n\n' +
+      '1 - Com decoração especial 🎀\n' +
+      '2 - Pernoite sem decoração 🌙'
     );
     return;
   }
@@ -349,8 +382,8 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     return;
   }
 
-  // Como chegar
-  if (contem(texto, ['endereco','endereço','onde fica','localizacao','localização','como chegar','chegar','mapa']) || texto === '9') {
+  // Como chegar — só por palavras-chave, não mais pelo menu
+  if (contem(texto, ['endereco','endereço','onde fica','localizacao','localização','como chegar','chegar','mapa'])) {
     enviarMensagem(tel, `📍 *Motel Lamore*\nRua Ana Neri, 501 — Ourinhos/SP\n\n🚗 Estacionamento coberto e privativo.\n\nAbertos 24 horas! 😊\n\n${MAPS_URL}`);
     return;
   }
@@ -381,7 +414,7 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   }
 
   // Fallback
-  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número:\n1-Preços | 6-Fotos | 7-Decoração\n8-Disponibilidade | 9-Endereço | 0-Atendente');
+  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número:\n1-Preços | 6-Fotos | 7-Decoração\n8-Disponibilidade | 9-Reservas | 0-Atendente');
 }
 
 // ============================================================
