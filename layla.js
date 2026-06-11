@@ -355,15 +355,12 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   // Decoração
   if (contem(texto, ['decoracao','decoração','decora'])) {
     enviarMensagem(tel,
-      '🌹 *Decoração Especial — Inclusa em Todas as Suítes*\n\n' +
-      'Neste Dia dos Namorados, preparamos um cenário completo:\n\n' +
-      '🛏 Cobertor vermelho + lençol personalizado com frase\n' +
-      '🎈 Balões metálicos coração + bexigas\n' +
-      '🌸 Pétalas de rosas naturais e artificiais\n' +
-      '🕯 Velas decorativas LED + aparador\n' +
-      '🍫 Bombons + toalhas e tapetes personalizados\n' +
-      '🍾 Espumante no balde com gelo + 2 taças\n\n' +
-      '⏰ Das 18h do dia 11 até as 06h do dia 13 de junho' + NOTA_MENU
+      '🌹 *Decoração Especial — Dia dos Namorados*\n\n' +
+      'Preparamos algo muito especial para vocês nesta data... 💫\n\n' +
+      'Venha descobrir pessoalmente. A surpresa faz parte da experiência! 😉\n\n' +
+      '📞 ' + TEL_REC + '\n' +
+      '📍 Rua Ana Neri, 501 — Ourinhos/SP\n\n' +
+      '_Estamos abertos 24 horas e prontos para recebê-los!_' + NOTA_MENU
     );
     return;
   }
