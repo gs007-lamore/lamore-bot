@@ -137,8 +137,8 @@ const SUITES = {
     '✅ Design moderno e aconchegante\n' +
     '🚗 Estacionamento coberto e privativo\n\n' +
     '💰 *2 horas:*\n' +
-    '• Semana: R$ 65,00\n' +
-    '• Fim de semana: R$ 70,00\n\n' +
+    '• Semana: R$ 65,00 (hora adicional R$ 30)\n' +
+    '• Fim de semana: R$ 70,00 (hora adicional R$ 30)\n\n' +
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 180,00\n' +
     '• Fim de semana: R$ 239,00\n\n' +
@@ -166,7 +166,7 @@ const SUITES = {
     '✅ Hidromassagem\n✅ Chuveiro\n✅ Ar-condicionado\n✅ TV\n✅ Frigobar\n' +
     '🚗 Estacionamento coberto e privativo\n\n' +
     '💰 *2 horas:*\n' +
-    '• Semana: R$ 149,00 / FDS: R$ 169,00 (hora adicional R$ 70)\n\n' +
+    '• Semana: R$ 149,00 (hora adicional R$ 70) / FDS: R$ 169,00 (hora adicional R$ 80)\n\n' +
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 299,00 / FDS: R$ 419,00\n\n' +
     PERIODOS + '\n\n' +
@@ -179,7 +179,7 @@ const SUITES = {
     '✅ Hidromassagem premium\n✅ Chuveiro\n✅ Ar-condicionado\n✅ TV\n✅ Frigobar\n' +
     '🚗 Estacionamento coberto e privativo\n\n' +
     '💰 *2 horas:*\n' +
-    '• Semana: R$ 165,00 / FDS: R$ 185,00 (hora adicional R$ 40)\n\n' +
+    '• Semana: R$ 165,00 (hora adicional R$ 80) / FDS: R$ 185,00 (hora adicional R$ 90)\n\n' +
     '🌙 *Pernoite (12h):*\n' +
     '• Semana: R$ 329,00 / FDS: R$ 439,00\n\n' +
     PERIODOS + '\n\n' +
