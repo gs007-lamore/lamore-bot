@@ -1,8 +1,6 @@
 // ============================================================
-//  LAYLA v11 - Assistente Virtual com Agente IA
+//  LAYLA v10 - Assistente Virtual com Agente IA
 //  Motel Lamore | Ourinhos/SP
-//  v11: Queijos e Vinhos (op.8), retorno menu no fluxo reserva,
-//       atendimento humano com encerramento manual/2h
 // ============================================================
 
 const http  = require('http');
@@ -16,7 +14,6 @@ const CONFIG = {
   NUMERO_DONO:       '5543996066590',
   PORTA:             process.env.PORT || 3000,
   TIMER_AGENTE_MS:   30 * 60 * 1000,
-  TIMER_HUMANO_MS:   2 * 60 * 60 * 1000,  // 2 horas
 };
 
 const FOTOS_URL = 'https://drive.google.com/drive/folders/1mW4xbKAGvySzm3SdGX_BLqBdiPOkwz2B';
@@ -150,10 +147,6 @@ function contem(texto, palavras) {
 
 // ============================================================
 //  MODO HUMANO
-//  - Ativado: Layla para de responder
-//  - Encerrado A: atendente envia exatamente "atendimento finalizado"
-//  - Encerrado B: 2 horas sem mensagens
-//  - Após encerramento: SEM mensagem automática; próxima msg do cliente inicia nova conversa
 // ============================================================
 function ativarModoHumano(tel) {
   const s = getSessao(tel);
@@ -161,31 +154,20 @@ function ativarModoHumano(tel) {
   s.modoAgente = false;
   s.historicoAgente = [];
   if (s.timerAgente) clearTimeout(s.timerAgente);
-  _reiniciarTimerHumano(tel);
-}
-
-function _reiniciarTimerHumano(tel) {
-  const s = getSessao(tel);
   if (s.timerHumano) clearTimeout(s.timerHumano);
   s.timerHumano = setTimeout(() => {
-    // Condição B: 2 horas sem mensagens — libera silenciosamente
     s.atendimentoHumano = false;
     s.etapa = 'menu';
-    s.dados = {};
-    console.log(`[HUMANO ENCERRADO por inatividade (2h)] ${tel}`);
-    // Sem mensagem automática — próxima msg do cliente recebe menu normalmente
-  }, CONFIG.TIMER_HUMANO_MS);
+    enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
+  }, CONFIG.TIMER_AGENTE_MS);
 }
 
 function desativarModoHumano(tel) {
-  // Condição A: atendente enviou "atendimento finalizado"
   const s = getSessao(tel);
   if (s.timerHumano) clearTimeout(s.timerHumano);
   s.atendimentoHumano = false;
   s.etapa = 'menu';
-  s.dados = {};
-  console.log(`[HUMANO ENCERRADO manualmente] ${tel}`);
-  // Sem mensagem automática — próxima msg do cliente recebe menu normalmente
+  enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
 }
 
 // ============================================================
@@ -291,7 +273,6 @@ function chamarClaudeAPI(tel, mensagemCliente) {
 // ============================================================
 //  TEXTOS
 // ============================================================
-// [ALTERAÇÃO 1] Opção 8 agora é Queijos e Vinhos
 const MENU =
   'Olá! Seja muito bem-vindo ao *Motel Lamore* 🌹\n\n' +
   'Somos referência em bem-estar e exclusividade em Ourinhos/SP.\n\n' +
@@ -303,33 +284,12 @@ const MENU =
   '5 - Hidro Premium\n' +
   '6 - Ver fotos\n' +
   '7 - Decoração especial\n' +
-  '8 - Quarta-feira de Queijos e Vinhos 🍷🧀\n' +
+  '8 - Disponibilidade de suítes\n' +
   '9 - Fazer uma reserva\n' +
   '0 - Falar com atendente\n\n' +
   '_Ou digite *Layla* para conversar com nossa assistente inteligente_ 🤖';
 
 const NOTA = '\n\n_Digite *menu* a qualquer momento para voltar ao início._';
-
-// [ALTERAÇÃO 1] Mensagem da experiência Queijos e Vinhos
-const QUEIJOS_VINHOS =
-  '🍷🧀 *QUARTA-FEIRA DE QUEIJOS E VINHOS NO LAMORE* ❤️\n\n' +
-  'Imagine uma noite a dois, em um ambiente intimista, uma taça de vinho, sabores marcantes e aquele clima perfeito para esquecer o mundo lá fora…\n\n' +
-  'No dia *21 de outubro*, o Lamore preparou uma experiência especial para transformar uma simples hospedagem em um momento inesquecível. ✨\n\n' +
-  '🍇 *O que espera por vocês:*\n\n' +
-  '• Queijo mussarela\n' +
-  '• Queijo prato\n' +
-  '• Queijo provolone\n' +
-  '• Queijo gorgonzola\n' +
-  '• Azeitonas\n' +
-  '• Morangos frescos\n' +
-  '• Biscoitos para acompanhar\n' +
-  '• 1 garrafa de vinho DV Catena Cabernet-Malbec, 750 ml\n\n' +
-  'Tudo pensado para criar o cenário perfeito para brindar, aproveitar a companhia um do outro e viver uma noite diferente. ❤️\n\n' +
-  'A experiência será adicionada ao valor normal da estadia na suíte escolhida, com um acréscimo referente ao vinho e à tábua de queijos e acompanhamentos.\n\n' +
-  '💌 Quer saber o valor dessa experiência e consultar sua reserva?\n\n' +
-  'Digite:\n\n' +
-  '1 - Quero saber mais e consultar o valor 🍷\n' +
-  '2 - Voltar ao menu principal';
 
 const HORARIOS_PRECOS =
   '⏰ *Horários e valores do Motel Lamore*\n\n' +
@@ -406,25 +366,9 @@ const PERNOITE_INFO =
   'Qual suíte te interessa?\n2 - Confort | 3 - Luxo | 4 - Hidro | 5 - Premium' + NOTA;
 
 // ============================================================
-//  HELPER — verificar se cliente quer voltar ao menu
-// ============================================================
-function querVoltar(texto) {
-  const t = texto.trim().toLowerCase();
-  return t === '0' || t === 'menu' || t === 'Menu' || t === 'MENU' || t === 'cancelar' || t === 'voltar';
-}
-
-// ============================================================
-//  FLUXO DE RESERVA (ALTERAÇÃO 2: retorno ao menu em toda etapa)
+//  FLUXO DE RESERVA
 // ============================================================
 function processarReserva(tel, texto, sessao) {
-  // Verificação de retorno ao menu em QUALQUER etapa da reserva
-  if (querVoltar(texto)) {
-    sessao.etapa = 'aguardando';
-    sessao.dados = {};
-    enviarMensagem(tel, MENU);
-    return;
-  }
-
   if (sessao.etapa === 'reserva_tipo') {
     if (texto === '1' || contem(texto, ['decoracao','decoração','especial'])) {
       sessao.etapa = 'reserva_confirmar';
@@ -434,7 +378,7 @@ function processarReserva(tel, texto, sessao) {
         'Por isso pedimos *2 dias de antecedência* para preparar tudo com carinho para você. 🌹\n\n' +
         'Não realizamos reservas para suítes sem decoração especial.\n\n' +
         '📖 Confira nosso catálogo com todos os valores:\nhttps://wa.me/c/5514997915897\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n0 - Voltar ao menu principal'
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado' + NOTA
       );
     } else if (texto === '2' || contem(texto, ['pernoite','sem decoracao','sem decoração'])) {
       sessao.etapa = 'reserva_pernoite_confirmar';
@@ -448,12 +392,10 @@ function processarReserva(tel, texto, sessao) {
         '💰 *Valores Pernoite (12h):*\n' +
         '• Segunda a quarta-feira: R$ 179,00\n' +
         '• Quinta-feira: R$ 269,00 _(já considerado fim de semana)_\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n0 - Voltar ao menu principal'
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado' + NOTA
       );
     } else {
-      enviarMensagem(tel,
-        'Por favor, escolha:\n1 - Com decoração especial 🎀\n2 - Pernoite sem decoração 🌙\n0 - Voltar ao menu principal'
-      );
+      enviarMensagem(tel, 'Por favor, escolha:\n1 - Com decoração especial 🎀\n2 - Pernoite sem decoração 🌙');
     }
     return;
   }
@@ -461,13 +403,11 @@ function processarReserva(tel, texto, sessao) {
   if (sessao.etapa === 'reserva_pernoite_confirmar') {
     if (texto === '1' || contem(texto, ['sim','quero','continuar'])) {
       sessao.etapa = 'menu';
-      sessao.dados = {};
       enviarMensagem(tel, 'Perfeito! 🌙\n\nUm atendente irá entrar em contato em breve para confirmar sua reserva.\n\nAguarde! 😊');
       alertarDono('decoracao', tel, 'Cliente quer reserva de pernoite sem decoração — Suíte Luxo');
       ativarModoHumano(tel);
     } else {
       sessao.etapa = 'menu';
-      sessao.dados = {};
       enviarMensagem(tel, 'Tudo bem! Se precisar de algo mais é só me chamar 😊' + NOTA);
     }
     return;
@@ -476,44 +416,14 @@ function processarReserva(tel, texto, sessao) {
   if (sessao.etapa === 'reserva_confirmar') {
     if (texto === '1' || contem(texto, ['sim','quero','continuar'])) {
       sessao.etapa = 'menu';
-      sessao.dados = {};
       enviarMensagem(tel, 'Perfeito! 🌹\n\nUm atendente irá entrar em contato em breve para prosseguir com sua reserva.\n\nAguarde!');
       alertarDono('decoracao', tel, 'Cliente quer reserva com decoração especial');
       ativarModoHumano(tel);
     } else {
       sessao.etapa = 'menu';
-      sessao.dados = {};
       enviarMensagem(tel, 'Tudo bem! Se precisar de algo mais é só me chamar 😊' + NOTA);
     }
     return;
-  }
-}
-
-// ============================================================
-//  FLUXO QUEIJOS E VINHOS (ALTERAÇÃO 1)
-// ============================================================
-function processarQueijosVinhos(tel, texto, sessao) {
-  if (texto === '1') {
-    // Encaminha ao atendimento humano com alerta específico
-    sessao.etapa = 'menu';
-    sessao.dados = {};
-    enviarMensagem(tel,
-      'Ótimo! 🍷 Estou chamando um atendente que vai te passar todos os detalhes e valores. Aguarde um momento! 😊'
-    );
-    enviarMensagem(CONFIG.NUMERO_DONO,
-      'Reserva de queijos e vinhos no whats app do motel 🚨🚨🚨'
-    );
-    ativarModoHumano(tel);
-  } else if (texto === '2') {
-    // Volta ao menu principal
-    sessao.etapa = 'aguardando';
-    sessao.dados = {};
-    enviarMensagem(tel, MENU);
-  } else {
-    // Opção inválida — mantém na etapa
-    enviarMensagem(tel,
-      'Por favor, escolha uma das opções:\n\n1 - Quero saber mais e consultar o valor 🍷\n2 - Voltar ao menu principal'
-    );
   }
 }
 
@@ -526,15 +436,6 @@ function processarMensagem(tel, textoOriginal, fromMe) {
 
   // fromMe: dono enviou
   if (fromMe) {
-    // [ALTERAÇÃO 3] Condição A: "atendimento finalizado" encerra modo humano silenciosamente
-    if (texto.toLowerCase() === 'atendimento finalizado') {
-      if (sessao.atendimentoHumano) {
-        desativarModoHumano(tel);
-        console.log(`[HUMANO ENCERRADO] comando "atendimento finalizado" de ${tel}`);
-      }
-      return; // não propaga para o cliente
-    }
-
     if (texto === '0') {
       if (sessao.atendimentoHumano) desativarModoHumano(tel);
       else if (sessao.modoAgente) encerrarAgente(tel);
@@ -543,8 +444,12 @@ function processarMensagem(tel, textoOriginal, fromMe) {
         ativarModoHumano(tel);
         console.log(`[HUMANO ATIVADO] ${tel}`);
       } else {
-        // [ALTERAÇÃO 3] Reinicia timer de 2h a cada nova mensagem durante atendimento
-        _reiniciarTimerHumano(tel);
+        if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
+        sessao.timerHumano = setTimeout(() => {
+          sessao.atendimentoHumano = false;
+          sessao.etapa = 'menu';
+          enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
+        }, CONFIG.TIMER_AGENTE_MS);
       }
     }
     return;
@@ -552,18 +457,13 @@ function processarMensagem(tel, textoOriginal, fromMe) {
 
   console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa} | humano: ${sessao.atendimentoHumano} | agente: ${sessao.modoAgente}`);
 
-  // Humano ativo — Layla não responde; reinicia timer de inatividade
-  if (sessao.atendimentoHumano) {
-    _reiniciarTimerHumano(tel); // cada msg do cliente também reinicia o prazo
-    console.log(`[IGNORADO humano] ${tel}`);
-    return;
-  }
+  // Humano ativo — Layla não responde
+  if (sessao.atendimentoHumano) { console.log(`[IGNORADO humano] ${tel}`); return; }
 
   // Menu interrompe qualquer fluxo
   if (texto === 'menu' || texto === 'Menu' || texto === 'MENU') {
     if (sessao.modoAgente) encerrarAgente(tel);
     sessao.etapa = 'aguardando';
-    sessao.dados = {};
     enviarMensagem(tel, MENU);
     return;
   }
@@ -577,12 +477,6 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   // Proteção número privado
   if (contem(texto, ['numero do dono','seu numero','43996','99606'])) {
     enviarMensagem(tel, 'Não tenho essa informação disponível 😊' + NOTA);
-    return;
-  }
-
-  // [ALTERAÇÃO 1] Fluxo Queijos e Vinhos ativo
-  if (sessao.etapa === 'queijos_vinhos') {
-    processarQueijosVinhos(tel, texto, sessao);
     return;
   }
 
@@ -618,16 +512,8 @@ function processarMensagem(tel, textoOriginal, fromMe) {
       '🌹 *Reservas — Motel Lamore*\n\n' +
       'Que tipo de reserva você deseja fazer?\n\n' +
       '1 - Com decoração especial 🎀\n' +
-      '2 - Pernoite sem decoração 🌙\n' +
-      '0 - Voltar ao menu principal'
+      '2 - Pernoite sem decoração 🌙'
     );
-    return;
-  }
-
-  // [ALTERAÇÃO 1] Opção 8 — Queijos e Vinhos
-  if (texto === '8') {
-    sessao.etapa = 'queijos_vinhos';
-    enviarMensagem(tel, QUEIJOS_VINHOS);
     return;
   }
 
@@ -662,8 +548,8 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     enviarMensagem(tel, `📍 *Motel Lamore*\nRua Ana Neri, 501 — Ourinhos/SP\n\n🚗 Estacionamento coberto e privativo.\n\nAbertos 24 horas! 😊\n\n${MAPS_URL}` + NOTA); return;
   }
 
-  // Disponibilidade (mantida via palavras-chave; opção 8 numérica agora é Queijos e Vinhos)
-  if (contem(texto, ['disponivel','disponível','disponibilidade','tem suite','tem vaga','livre','vago'])) {
+  // Disponibilidade
+  if (contem(texto, ['disponivel','disponível','disponibilidade','tem suite','tem vaga','livre','vago']) || texto === '8') {
     enviarMensagem(tel, `Para verificar disponibilidade:\n\n📞 *${TEL_REC}*\n\nAtendemos 24 horas!` + NOTA); return;
   }
 
@@ -698,7 +584,7 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     return;
   }
 
-  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número do menu ou *Layla* para falar com nossa assistente inteligente!\n\n1-Preços | 2-Confort | 3-Luxo | 4-Hidro | 5-Premium\n6-Fotos | 7-Decoração | 8-Queijos e Vinhos | 9-Reservas | 0-Atendente');
+  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número do menu ou *Layla* para falar com nossa assistente inteligente!\n\n1-Preços | 2-Confort | 3-Luxo | 4-Hidro | 5-Premium\n6-Fotos | 7-Decoração | 8-Disponibilidade | 9-Reservas | 0-Atendente');
 }
 
 // ============================================================
@@ -733,13 +619,13 @@ const server = http.createServer((req, res) => {
       res.writeHead(200); res.end('ok');
     });
   } else {
-    res.writeHead(200); res.end('Layla v11 - Motel Lamore online 🌹');
+    res.writeHead(200); res.end('Layla v10 - Motel Lamore online 🌹');
   }
 });
 
 server.listen(CONFIG.PORTA, () => {
   console.log('\n🌹 ============================================');
-  console.log('   LAYLA v11 — Queijos & Vinhos + Controle Humano');
+  console.log('   LAYLA v10 — Assistente com Agente IA');
   console.log('   Motel Lamore | Porta: ' + CONFIG.PORTA);
   console.log('🌹 ============================================\n');
   if (!CONFIG.ANTHROPIC_KEY) {
