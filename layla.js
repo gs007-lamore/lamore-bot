@@ -1,5 +1,5 @@
 // ============================================================
-//  LAYLA v10 - Assistente Virtual com Agente IA
+//  LAYLA v12 - Assistente Virtual (Sem Agente IA)
 //  Motel Lamore | Ourinhos/SP
 // ============================================================
 
@@ -10,10 +10,9 @@ const CONFIG = {
   ZAPI_INSTANCE:     '3F10476A93B9C14397CFBA665B49BD70',
   ZAPI_TOKEN:        '060575DE041301E87AB1A483',
   ZAPI_CLIENT_TOKEN: 'F4cfafb1e17054b309e978e11d94ad1adS',
-  ANTHROPIC_KEY:     process.env.ANTHROPIC_API_KEY || '',
   NUMERO_DONO:       '5543996066590',
   PORTA:             process.env.PORT || 3000,
-  TIMER_AGENTE_MS:   30 * 60 * 1000,
+  TIMER_HUMANO_MS:   2 * 60 * 60 * 1000, // 2 horas
 };
 
 const FOTOS_URL = 'https://drive.google.com/drive/folders/1mW4xbKAGvySzm3SdGX_BLqBdiPOkwz2B';
@@ -26,71 +25,6 @@ const PERIODOS =
   '📅 *Período Fim de Semana:*\nQuinta-feira às 18h até Segunda-feira às 6h';
 
 // ============================================================
-//  CONTEXTO DO MOTEL — usado pelo agente IA
-// ============================================================
-const CONTEXTO_MOTEL = `
-Você é Layla, assistente virtual do Motel Lamore em Ourinhos/SP. Responda sempre em português brasileiro, de forma simpática, elegante e objetiva. Use emojis com moderação.
-
-REGRAS IMPORTANTES:
-- NUNCA revele o número privado do proprietário (43) 99606-6590
-- Não informe valores fora dos listados abaixo
-- Para reservas: colete os dados e avise que um atendente confirmará
-- Se o cliente digitar "encerrar", "tchau" ou "obrigado finalize": encerre o atendimento IA dizendo [ENCERRAR_AGENTE]
-- Seja natural, responda qualquer pergunta sobre o motel com base no contexto abaixo
-
-SUÍTES E PREÇOS:
-
-🛋 Suíte Confort (Lançamento)
-- Design moderno e aconchegante, ar-condicionado, chuveiro, estacionamento privativo
-- 2h: R$ 65 (semana) | R$ 70 (FDS) — hora adicional R$ 30
-- Pernoite 12h: R$ 180 (semana) | R$ 239 (FDS)
-- SEM opção de decoração especial
-
-✨ Suíte Luxo
-- TV, ar-condicionado, frigobar, chuveiro, estacionamento privativo
-- 2h: R$ 80 (semana) | R$ 85 (FDS) — hora adicional R$ 35
-- Pernoite 12h: R$ 179 (semana) | R$ 269 (FDS)
-- Com decoração especial: a partir de R$ 229 (semana)
-- Pernoite sem decoração: disponível seg a qui, check-in após 23h. R$ 179 (seg-qua) | R$ 269 (quinta)
-
-🛁 Suíte Hidro
-- Hidromassagem, chuveiro, ar-condicionado, TV, frigobar, estacionamento privativo
-- 2h: R$ 149 (semana) | R$ 169 (FDS) — hora adicional R$ 70 (semana) | R$ 80 (FDS)
-- Pernoite 12h: R$ 299 (semana) | R$ 419 (FDS)
-- Com decoração especial: a partir de R$ 379 (semana)
-
-👑 Hidro Premium
-- Hidromassagem premium, chuveiro, ar-condicionado, TV, frigobar, estacionamento privativo
-- 2h: R$ 165 (semana) | R$ 185 (FDS) — hora adicional R$ 80 (semana) | R$ 90 (FDS)
-- Pernoite 12h: R$ 329 (semana) | R$ 439 (FDS)
-- Com decoração especial: a partir de R$ 399 (semana)
-
-PERÍODOS:
-- Semana: segunda-feira às 6h até quinta-feira às 18h
-- Fim de semana: quinta-feira às 18h até segunda-feira às 6h
-
-DECORAÇÃO ESPECIAL (Luxo, Hidro e Premium):
-Cobertor vermelho, lençol personalizado com frase, balões metálicos coração, bexigas, pétalas de rosas, velas LED, bombons, toalhas personalizadas, espumante no balde com gelo + 2 taças
-Frases disponíveis: Parabéns pelo seu aniversário | Parabéns pelo nosso aniversário de casamento | Felicidades aos noivos | Eu te amo | Quer casar comigo? | Quer namorar comigo? | Vamos brindar o amor | Você me faz feliz
-Espumante: Chuva de Prata ou Santa Colina
-EXIGE reserva com mínimo 48h de antecedência
-
-RESERVA PERNOITE SEM DECORAÇÃO (apenas Suíte Luxo):
-- Disponível somente seg a qui
-- Check-in após 23h
-- Fim de semana: apenas com decoração especial
-
-INFORMAÇÕES GERAIS:
-- Funcionamento: 24 horas, todos os dias
-- Endereço: Rua Ana Neri, 501 — Ourinhos/SP
-- Estacionamento: coberto e privativo
-- Disponibilidade de suítes: ligar em (14) 3324-6489
-- Fotos: ${FOTOS_URL}
-
-Ao final de cada resposta, se fizer sentido, sugira ao cliente digitar "encerrar" quando quiser voltar ao menu automático.
-`;
-
-// ============================================================
 //  SESSÕES
 // ============================================================
 function getSessao(tel) {
@@ -98,9 +32,6 @@ function getSessao(tel) {
     etapa: 'menu',
     dados: {},
     atendimentoHumano: false,
-    modoAgente: false,
-    historicoAgente: [],
-    timerAgente: null,
     timerHumano: null,
     fallbackCount: 0,
   };
@@ -132,9 +63,9 @@ function enviarMensagem(telefone, texto) {
 }
 
 function alertarDono(tipo, tel, msg) {
-  const hora  = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  const icones = { reclamacao: '🔴', esquecido: '🟡', decoracao: '🟢', agente: '🤖' };
-  const labels  = { reclamacao: 'Reclamação', esquecido: 'Item esquecido', decoracao: 'Reserva c/ decoração', agente: 'Agente IA ativo' };
+  const hora   = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const icones = { reclamacao: '🔴', esquecido: '🟡', decoracao: '🟢' };
+  const labels  = { reclamacao: 'Reclamação', esquecido: 'Item esquecido', decoracao: 'Reserva c/ decoração' };
   enviarMensagem(CONFIG.NUMERO_DONO,
     `${icones[tipo]} *ALERTA LAMORE*\nTipo: ${labels[tipo]}\nCliente: ${tel}\nMsg: "${msg}"\nHorário: ${hora}`
   );
@@ -151,15 +82,20 @@ function contem(texto, palavras) {
 function ativarModoHumano(tel) {
   const s = getSessao(tel);
   s.atendimentoHumano = true;
-  s.modoAgente = false;
-  s.historicoAgente = [];
-  if (s.timerAgente) clearTimeout(s.timerAgente);
+  if (s.timerHumano) clearTimeout(s.timerHumano);
+  _reiniciarTimerHumano(tel);
+}
+
+function _reiniciarTimerHumano(tel) {
+  const s = getSessao(tel);
   if (s.timerHumano) clearTimeout(s.timerHumano);
   s.timerHumano = setTimeout(() => {
     s.atendimentoHumano = false;
     s.etapa = 'menu';
-    enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
-  }, CONFIG.TIMER_AGENTE_MS);
+    s.dados = {};
+    console.log(`[HUMANO ENCERRADO por inatividade (2h)] ${tel}`);
+    // Sem mensagem automática — próxima mensagem do cliente recebe o menu normalmente
+  }, CONFIG.TIMER_HUMANO_MS);
 }
 
 function desativarModoHumano(tel) {
@@ -167,107 +103,9 @@ function desativarModoHumano(tel) {
   if (s.timerHumano) clearTimeout(s.timerHumano);
   s.atendimentoHumano = false;
   s.etapa = 'menu';
-  enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
-}
-
-// ============================================================
-//  MODO AGENTE IA
-// ============================================================
-function ativarAgente(tel, textoInicial) {
-  const s = getSessao(tel);
-  s.modoAgente = true;
-  s.historicoAgente = [];
-  s.fallbackCount = 0;
-  if (s.timerAgente) clearTimeout(s.timerAgente);
-  alertarDono('agente', tel, `Agente IA ativado. Primeira mensagem: "${textoInicial}"`);
-  console.log(`[AGENTE IA ATIVO] ${tel}`);
-}
-
-function renovarTimerAgente(tel) {
-  const s = getSessao(tel);
-  if (s.timerAgente) clearTimeout(s.timerAgente);
-  s.timerAgente = setTimeout(() => {
-    s.modoAgente = false;
-    s.historicoAgente = [];
-    s.etapa = 'menu';
-    console.log(`[AGENTE ENCERRADO POR TIMEOUT] ${tel}`);
-    enviarMensagem(tel, 'Percebo que a conversa ficou um tempo sem resposta 😊\n\nEstou voltando ao menu automático. Digite *menu* quando quiser continuar!');
-  }, CONFIG.TIMER_AGENTE_MS);
-}
-
-function encerrarAgente(tel) {
-  const s = getSessao(tel);
-  if (s.timerAgente) clearTimeout(s.timerAgente);
-  s.modoAgente = false;
-  s.historicoAgente = [];
-  s.etapa = 'menu';
-  console.log(`[AGENTE ENCERRADO] ${tel}`);
-  enviarMensagem(tel, 'Atendimento encerrado! Foi um prazer 🌹\n\nDigite *menu* sempre que precisar de ajuda.');
-}
-
-function chamarClaudeAPI(tel, mensagemCliente) {
-  const s = getSessao(tel);
-
-  s.historicoAgente.push({ role: 'user', content: mensagemCliente });
-
-  const body = JSON.stringify({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: CONTEXTO_MOTEL,
-    messages: s.historicoAgente,
-  });
-
-  const opts = {
-    hostname: 'api.anthropic.com',
-    path: '/v1/messages',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': CONFIG.ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'Content-Length': Buffer.byteLength(body),
-    },
-  };
-
-  const req = https.request(opts, res => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-      try {
-        const resp = JSON.parse(data);
-        const resposta = resp.content?.[0]?.text || 'Desculpe, não consegui processar sua mensagem. Tente novamente!';
-
-        s.historicoAgente.push({ role: 'assistant', content: resposta });
-        renovarTimerAgente(tel);
-
-        // Notificar dono em tempo real
-        enviarMensagem(CONFIG.NUMERO_DONO,
-          `🤖 *AGENTE IA — ${tel}*\n\n👤 Cliente: "${mensagemCliente}"\n\n🌹 Layla: "${resposta.substring(0, 300)}${resposta.length > 300 ? '...' : ''}"`
-        );
-
-        // Verificar se deve encerrar
-        if (resposta.includes('[ENCERRAR_AGENTE]')) {
-          const respostaLimpa = resposta.replace('[ENCERRAR_AGENTE]', '').trim();
-          if (respostaLimpa) enviarMensagem(tel, respostaLimpa);
-          encerrarAgente(tel);
-        } else {
-          enviarMensagem(tel, resposta);
-        }
-
-      } catch (e) {
-        console.error('[ERRO Claude API]', e.message);
-        enviarMensagem(tel, 'Desculpe, tive um problema técnico. Tente novamente em instantes! 😊');
-      }
-    });
-  });
-
-  req.on('error', e => {
-    console.error('[ERRO API]', e.message);
-    enviarMensagem(tel, 'Desculpe, tive um problema técnico. Tente novamente! 😊');
-  });
-
-  req.write(body);
-  req.end();
+  s.dados = {};
+  console.log(`[HUMANO ENCERRADO manualmente] ${tel}`);
+  // Sem mensagem automática
 }
 
 // ============================================================
@@ -286,8 +124,7 @@ const MENU =
   '7 - Decoração especial\n' +
   '8 - Disponibilidade de suítes\n' +
   '9 - Fazer uma reserva\n' +
-  '0 - Falar com atendente\n\n' +
-  '_Ou digite *Layla* para conversar com nossa assistente inteligente_ 🤖';
+  '0 - Falar com atendente';
 
 const NOTA = '\n\n_Digite *menu* a qualquer momento para voltar ao início._';
 
@@ -368,7 +205,19 @@ const PERNOITE_INFO =
 // ============================================================
 //  FLUXO DE RESERVA
 // ============================================================
+function querVoltar(texto) {
+  const t = texto.trim().toLowerCase();
+  return t === '0' || t === 'menu' || t === 'cancelar' || t === 'voltar';
+}
+
 function processarReserva(tel, texto, sessao) {
+  if (querVoltar(texto)) {
+    sessao.etapa = 'aguardando';
+    sessao.dados = {};
+    enviarMensagem(tel, MENU);
+    return;
+  }
+
   if (sessao.etapa === 'reserva_tipo') {
     if (texto === '1' || contem(texto, ['decoracao','decoração','especial'])) {
       sessao.etapa = 'reserva_confirmar';
@@ -378,7 +227,7 @@ function processarReserva(tel, texto, sessao) {
         'Por isso pedimos *2 dias de antecedência* para preparar tudo com carinho para você. 🌹\n\n' +
         'Não realizamos reservas para suítes sem decoração especial.\n\n' +
         '📖 Confira nosso catálogo com todos os valores:\nhttps://wa.me/c/5514997915897\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado' + NOTA
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n0 - Voltar ao menu' + NOTA
       );
     } else if (texto === '2' || contem(texto, ['pernoite','sem decoracao','sem decoração'])) {
       sessao.etapa = 'reserva_pernoite_confirmar';
@@ -392,10 +241,10 @@ function processarReserva(tel, texto, sessao) {
         '💰 *Valores Pernoite (12h):*\n' +
         '• Segunda a quarta-feira: R$ 179,00\n' +
         '• Quinta-feira: R$ 269,00 _(já considerado fim de semana)_\n\n' +
-        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado' + NOTA
+        'Deseja continuar com a reserva?\n1 - Sim, quero continuar\n2 - Não, obrigado\n0 - Voltar ao menu' + NOTA
       );
     } else {
-      enviarMensagem(tel, 'Por favor, escolha:\n1 - Com decoração especial 🎀\n2 - Pernoite sem decoração 🌙');
+      enviarMensagem(tel, 'Por favor, escolha:\n1 - Com decoração especial 🎀\n2 - Pernoite sem decoração 🌙\n0 - Voltar ao menu');
     }
     return;
   }
@@ -403,11 +252,13 @@ function processarReserva(tel, texto, sessao) {
   if (sessao.etapa === 'reserva_pernoite_confirmar') {
     if (texto === '1' || contem(texto, ['sim','quero','continuar'])) {
       sessao.etapa = 'menu';
+      sessao.dados = {};
       enviarMensagem(tel, 'Perfeito! 🌙\n\nUm atendente irá entrar em contato em breve para confirmar sua reserva.\n\nAguarde! 😊');
       alertarDono('decoracao', tel, 'Cliente quer reserva de pernoite sem decoração — Suíte Luxo');
       ativarModoHumano(tel);
     } else {
       sessao.etapa = 'menu';
+      sessao.dados = {};
       enviarMensagem(tel, 'Tudo bem! Se precisar de algo mais é só me chamar 😊' + NOTA);
     }
     return;
@@ -416,11 +267,13 @@ function processarReserva(tel, texto, sessao) {
   if (sessao.etapa === 'reserva_confirmar') {
     if (texto === '1' || contem(texto, ['sim','quero','continuar'])) {
       sessao.etapa = 'menu';
+      sessao.dados = {};
       enviarMensagem(tel, 'Perfeito! 🌹\n\nUm atendente irá entrar em contato em breve para prosseguir com sua reserva.\n\nAguarde!');
       alertarDono('decoracao', tel, 'Cliente quer reserva com decoração especial');
       ativarModoHumano(tel);
     } else {
       sessao.etapa = 'menu';
+      sessao.dados = {};
       enviarMensagem(tel, 'Tudo bem! Se precisar de algo mais é só me chamar 😊' + NOTA);
     }
     return;
@@ -434,43 +287,37 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   const texto  = textoOriginal.trim();
   const sessao = getSessao(tel);
 
-  // fromMe: dono enviou
+  // fromMe: atendente enviou mensagem pelo WhatsApp do motel
   if (fromMe) {
+    if (texto.toLowerCase() === 'atendimento finalizado') {
+      // Encerra modo humano silenciosamente
+      if (sessao.atendimentoHumano) desativarModoHumano(tel);
+      return;
+    }
     if (texto === '0') {
       if (sessao.atendimentoHumano) desativarModoHumano(tel);
-      else if (sessao.modoAgente) encerrarAgente(tel);
     } else {
       if (!sessao.atendimentoHumano) {
         ativarModoHumano(tel);
         console.log(`[HUMANO ATIVADO] ${tel}`);
       } else {
-        if (sessao.timerHumano) clearTimeout(sessao.timerHumano);
-        sessao.timerHumano = setTimeout(() => {
-          sessao.atendimentoHumano = false;
-          sessao.etapa = 'menu';
-          enviarMensagem(tel, 'Olá! Sou a Layla 🌹\n\nEstou de volta! Digite *menu* para ver nossas opções.');
-        }, CONFIG.TIMER_AGENTE_MS);
+        // Atendente continua no atendimento — reinicia o timer de 2h
+        _reiniciarTimerHumano(tel);
       }
     }
     return;
   }
 
-  console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa} | humano: ${sessao.atendimentoHumano} | agente: ${sessao.modoAgente}`);
+  console.log(`[MSG] ${tel}: "${texto}" | etapa: ${sessao.etapa} | humano: ${sessao.atendimentoHumano}`);
 
   // Humano ativo — Layla não responde
   if (sessao.atendimentoHumano) { console.log(`[IGNORADO humano] ${tel}`); return; }
 
   // Menu interrompe qualquer fluxo
-  if (texto === 'menu' || texto === 'Menu' || texto === 'MENU') {
-    if (sessao.modoAgente) encerrarAgente(tel);
+  if (texto.toLowerCase() === 'menu') {
     sessao.etapa = 'aguardando';
+    sessao.dados = {};
     enviarMensagem(tel, MENU);
-    return;
-  }
-
-  // ── MODO AGENTE IA ──
-  if (sessao.modoAgente) {
-    chamarClaudeAPI(tel, texto);
     return;
   }
 
@@ -483,21 +330,7 @@ function processarMensagem(tel, textoOriginal, fromMe) {
   // Fluxo de reserva ativo
   if (sessao.etapa.startsWith('reserva_')) { processarReserva(tel, texto, sessao); return; }
 
-  // ── GATILHOS PARA AGENTE IA ──
-
-  // 1. Cliente pede para falar com Layla inteligente
-  if (contem(texto, ['layla','falar com a layla','assistente inteligente','ia','inteligente']) || texto.toLowerCase() === 'layla') {
-    ativarAgente(tel, texto);
-    enviarMensagem(tel,
-      '🤖 *Olá! Sou a Layla, sua assistente inteligente do Motel Lamore!* 🌹\n\n' +
-      'Agora você pode me fazer qualquer pergunta sobre nossas suítes, reservas ou serviços. Vou te ajudar da melhor forma!\n\n' +
-      '_Digite *encerrar* quando quiser voltar ao menu automático._'
-    );
-    renovarTimerAgente(tel);
-    return;
-  }
-
-  // 2. Cliente pede atendente
+  // Solicitar atendente humano
   if (contem(texto, ['atendente','humano','falar com','quero falar','me ajuda']) || texto === '0') {
     enviarMensagem(tel, 'Certo! Estou chamando um atendente. Aguarde um momento 😊\n\nAssim que ele finalizar, estarei aqui novamente!');
     alertarDono('reclamacao', tel, `Solicitou atendente: "${texto}"`);
@@ -505,14 +338,15 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     return;
   }
 
-  // 3. Cliente quer prosseguir com reserva (agente assume)
+  // Reserva
   if (contem(texto, ['reservar','reserva','agendar']) || texto === 'reservar' || texto === '9') {
     sessao.etapa = 'reserva_tipo';
     enviarMensagem(tel,
       '🌹 *Reservas — Motel Lamore*\n\n' +
       'Que tipo de reserva você deseja fazer?\n\n' +
       '1 - Com decoração especial 🎀\n' +
-      '2 - Pernoite sem decoração 🌙'
+      '2 - Pernoite sem decoração 🌙\n' +
+      '0 - Voltar ao menu'
     );
     return;
   }
@@ -570,21 +404,15 @@ function processarMensagem(tel, textoOriginal, fromMe) {
     enviarMensagem(tel, MENU); sessao.etapa = 'aguardando'; return;
   }
 
-  // 4. Fallback repetido → ativa agente IA
+  // Fallback
   sessao.fallbackCount = (sessao.fallbackCount || 0) + 1;
   if (sessao.fallbackCount >= 2) {
     sessao.fallbackCount = 0;
-    ativarAgente(tel, texto);
-    enviarMensagem(tel,
-      '🤖 Parece que você precisa de uma ajuda mais personalizada!\n\n' +
-      'Vou te conectar com a Layla inteligente agora. Pode fazer sua pergunta! 🌹\n\n' +
-      '_Digite *encerrar* quando quiser voltar ao menu._'
-    );
-    chamarClaudeAPI(tel, texto);
+    enviarMensagem(tel, 'Não consegui entender sua dúvida 😊\n\nQuer falar com um atendente?\n\n0 - Sim, chamar atendente\n\nOu digite *menu* para ver as opções.');
     return;
   }
 
-  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número do menu ou *Layla* para falar com nossa assistente inteligente!\n\n1-Preços | 2-Confort | 3-Luxo | 4-Hidro | 5-Premium\n6-Fotos | 7-Decoração | 8-Disponibilidade | 9-Reservas | 0-Atendente');
+  enviarMensagem(tel, 'Não entendi muito bem 😊\n\nDigite um número do menu:\n\n1-Preços | 2-Confort | 3-Luxo | 4-Hidro | 5-Premium\n6-Fotos | 7-Decoração | 8-Disponibilidade | 9-Reservas | 0-Atendente');
 }
 
 // ============================================================
@@ -602,7 +430,7 @@ const server = http.createServer((req, res) => {
         const fromMe = payload.fromMe || false;
         const tipo   = payload.type || payload.messageType || '';
 
-        // Chamada recebida
+        // Chamada recebida — não atende, manda mensagem
         if (tel && !fromMe && (tipo === 'call' || tipo === 'ReceivedCall' || payload.isCall)) {
           console.log(`[CHAMADA RECUSADA] ${tel}`);
           setTimeout(() => {
@@ -619,16 +447,13 @@ const server = http.createServer((req, res) => {
       res.writeHead(200); res.end('ok');
     });
   } else {
-    res.writeHead(200); res.end('Layla v10 - Motel Lamore online 🌹');
+    res.writeHead(200); res.end('Layla v12 - Motel Lamore online 🌹');
   }
 });
 
 server.listen(CONFIG.PORTA, () => {
   console.log('\n🌹 ============================================');
-  console.log('   LAYLA v10 — Assistente com Agente IA');
+  console.log('   LAYLA v12 — Assistente Virtual (Sem IA)');
   console.log('   Motel Lamore | Porta: ' + CONFIG.PORTA);
   console.log('🌹 ============================================\n');
-  if (!CONFIG.ANTHROPIC_KEY) {
-    console.log('⚠️  ATENÇÃO: Configure ANTHROPIC_API_KEY no Railway!');
-  }
 });
